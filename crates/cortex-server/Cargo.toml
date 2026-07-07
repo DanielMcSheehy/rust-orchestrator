@@ -1,0 +1,35 @@
+[package]
+name = "cortex-server"
+description = "Cortex control plane: REST + SSE API, DAG orchestrator, scheduler, ingestion, serverless functions"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "cortex-server"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+axum = { workspace = true }
+chrono = { workspace = true }
+cortex-core = { path = "../cortex-core" }
+cortex-executor = { path = "../cortex-executor" }
+cortex-store = { path = "../cortex-store" }
+futures = { workspace = true }
+polars = { version = "0.51", features = ["lazy", "json", "sql"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tokio-postgres = { version = "0.7", features = ["with-chrono-0_4", "with-uuid-1", "with-serde_json-1"] }
+tokio-stream = { workspace = true }
+tower-http = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

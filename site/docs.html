@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cortex Docs — concepts, API, SDKs, deployment</title>
+<meta name="description" content="Everything Cortex: workflows, tasks, runs, the HTTP API, SDKs, in-task bindings, SQL engine, notebooks, MCP, isolation tiers, and deployment.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%236d8dff' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%236d8dff'/%3E%3C/svg%3E">
+<style>
+:root{
+  --page:#05080f;--surface:#0d1424;--surface-2:#131c30;
+  --border:rgba(148,163,184,.14);--border-strong:rgba(148,163,184,.26);
+  --ink:#f2f6fd;--ink-2:#b9c5da;--ink-3:#7e8ca6;
+  --accent:#6d8dff;--violet:#a78bfa;--cyan:#22d3ee;--sky:#38bdf8;
+  --good:#34d399;--warning:#fbbf24;--critical:#f87171;
+  --grad:linear-gradient(120deg,#6d8dff,#8b5cf6 55%,#22d3ee);
+  --mono:"SFMono-Regular",ui-monospace,"Cascadia Code",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{
+  background:
+    radial-gradient(900px 500px at 10% -10%,rgba(99,102,241,.14),transparent 60%),
+    radial-gradient(800px 450px at 95% 0%,rgba(34,211,238,.07),transparent 55%),
+    var(--page);
+  background-attachment:fixed;
+  color:var(--ink-2);font-family:var(--sans);font-size:15.5px;line-height:1.65;
+  -webkit-font-smoothing:antialiased}
+a{color:var(--sky);text-decoration:none}a:hover{text-decoration:underline}
+.mono{font-family:var(--mono)}
+.layout{display:grid;grid-template-columns:250px 1fr;max-width:1200px;margin:0 auto;gap:44px;padding:0 28px}
+
+/* sidebar */
+aside{position:sticky;top:0;height:100vh;overflow-y:auto;padding:26px 0 40px;
+  border-right:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:9px;font-weight:750;font-size:17px;margin-bottom:6px;
+  background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+aside .back{font-size:12.5px;color:var(--ink-3);display:block;margin-bottom:22px}
+aside .group{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);margin:20px 0 6px}
+aside nav a{display:block;padding:5px 10px;margin-left:-10px;border-radius:7px;
+  color:var(--ink-2);font-size:13.5px;text-decoration:none}
+aside nav a:hover{background:var(--surface-2);color:var(--ink)}
+aside nav a.on{background:rgba(109,141,255,.14);color:var(--ink);box-shadow:inset 2px 0 0 var(--accent)}
+
+/* content */
+main{padding:34px 0 90px;min-width:0}
+h1{font-size:38px;letter-spacing:-.02em;color:var(--ink);font-weight:800;margin-bottom:10px}
+h1 .g{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{font-size:17px;max-width:46em}
+section{padding-top:52px}
+h2{font-size:26px;letter-spacing:-.015em;color:var(--ink);font-weight:750;margin-bottom:12px;
+  padding-top:10px;border-top:1px solid var(--border)}
+section:first-of-type h2{border-top:none;padding-top:0}
+h3{font-size:17px;color:var(--ink);font-weight:700;margin:26px 0 8px}
+p{margin:10px 0;max-width:72ch}
+p b,li b{color:var(--ink);font-weight:650}
+ul,ol{margin:10px 0 10px 22px;max-width:70ch}
+li{margin:4px 0}
+code{font-family:var(--mono);font-size:.88em;background:var(--surface-2);
+  border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:#93b4ff}
+pre{background:#070d1a;border:1px solid var(--border);border-radius:12px;
+  padding:16px 20px;overflow-x:auto;font-family:var(--mono);font-size:12.8px;
+  line-height:1.7;color:var(--ink-2);margin:14px 0}
+pre code{background:none;border:none;padding:0;color:inherit;font-size:inherit}
+.k{color:var(--violet)}.s{color:#5eead4}.n{color:var(--warning)}.f{color:var(--sky)}
+.c{color:var(--ink-3);font-style:italic}.p{color:#93b4ff}.o{color:#8ea3c4}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:14px 0;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:block}
+table thead{background:var(--surface-2)}
+th{text-align:left;padding:9px 14px;font-size:11.5px;text-transform:uppercase;
+  letter-spacing:.07em;color:var(--ink-3)}
+td{padding:9px 14px;border-top:1px solid var(--border);vertical-align:top}
+td:first-child{white-space:nowrap;font-family:var(--mono);font-size:12.5px;color:var(--ink)}
+.callout{border:1px solid rgba(251,191,36,.35);background:rgba(251,191,36,.07);
+  border-radius:12px;padding:13px 18px;font-size:14px;margin:16px 0}
+.callout.info{border-color:rgba(56,189,248,.35);background:rgba(56,189,248,.07)}
+.pillrow{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.pill{font-size:12px;font-weight:600;padding:3px 12px;border-radius:999px;
+  border:1px solid var(--border-strong);color:var(--ink-2)}
+@media(max-width:860px){.layout{grid-template-columns:1fr}aside{position:static;height:auto;border:none}}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<aside>
+  <span class="brand"><svg width="20" height="20" viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="none" stroke="#6d8dff" stroke-width="3"/><circle cx="16" cy="16" r="5" fill="#22d3ee"/></svg>Cortex Docs</span>
+  <a class="back" href="./index.html">← back to cortex.dev</a>
+  <nav id="toc">
+    <div class="group">Start</div>
+    <a href="#overview">Overview</a>
+    <a href="#quickstart">Quickstart</a>
+    <div class="group">Core</div>
+    <a href="#concepts">Concepts</a>
+    <a href="#tasks">Writing tasks</a>
+    <a href="#triggers">Triggers</a>
+    <div class="group">Interfaces</div>
+    <a href="#api">HTTP API</a>
+    <a href="#sdks">SDKs</a>
+    <a href="#bindings">In-task bindings</a>
+    <a href="#mcp">MCP (agents)</a>
+    <div class="group">Data</div>
+    <a href="#data">Datasets &amp; SQL</a>
+    <a href="#connectors">Connectors</a>
+    <a href="#notebooks">Notebooks</a>
+    <div class="group">Operations</div>
+    <a href="#isolation">Isolation &amp; pool</a>
+    <a href="#performance">Performance</a>
+    <a href="#deploy">Deployment</a>
+    <a href="#config">Configuration</a>
+  </nav>
+</aside>
+
+<main>
+<h1>Cortex <span class="g">documentation</span></h1>
+<p class="lead">Everything in one place: the execution model, the HTTP surface, both SDKs,
+the data engine, and how to run it. All benchmark numbers here were measured on a modest
+dev container with the release build — reproduce them from the repo.</p>
+
+<section id="overview">
+<h2>Overview</h2>
+<p>Cortex is a <b>Rust-native orchestration platform</b> for Python and TypeScript workloads.
+One 67&nbsp;MB binary contains the scheduler, a parallel DAG orchestrator, a warm worker pool,
+streaming NDJSON ingestion, an embedded SQL engine (Polars), serverless functions, notebooks,
+an SSE event bus, and an MCP server for AI agents. State lives in a single SQLite (WAL) file.</p>
+<ul>
+  <li><b>Polyglot DAGs</b> — Python, TypeScript, and JavaScript tasks in one graph; results flow across language boundaries.</li>
+  <li><b>~1 ms task overhead</b> — interpreters stay warm between tasks (29–78× faster than cold spawns).</li>
+  <li><b>Zero infrastructure</b> — no broker, no database server; 16 MB RAM at idle.</li>
+  <li><b>Agent-native</b> — every capability exposed as JSON HTTP + MCP tools.</li>
+</ul>
+<div class="callout">⚠ The API is <b>unauthenticated by design</b> (trusted, single-tenant).
+Keep deployments internal or front them with your proxy's access controls.</div>
+</section>
+
+<section id="quickstart">
+<h2>Quickstart</h2>
+<pre><span class="c"># run everything (console + API on :7420)</span>
+git clone https://github.com/FormantIO/cortex &amp;&amp; cd cortex
+docker compose up --build
+
+<span class="c"># or natively: Rust 1.80+, Python 3.10+, Node 20+ (22+ for TS tasks)</span>
+cargo run --release -p cortex-server
+cd console &amp;&amp; npm install &amp;&amp; npm run build   <span class="c"># then restart the server</span></pre>
+<p>Create and run your first workflow:</p>
+<pre>curl -X POST localhost:7420/api/workflows -H <span class="s">'content-type: application/json'</span> -d <span class="s">'{
+  "name": "hello",
+  "params": {"n": 100},
+  "tasks": [
+    {"id": "extract", "runtime": "python", "depends_on": [],
+     "code": "def handler(params, inputs):\n    return {\"values\": list(range(params[\"n\"]))}\n"},
+    {"id": "total", "runtime": "typescript", "depends_on": ["extract"],
+     "code": "export function handler(p: any, i: any) {\n  return i.extract.values.reduce((a: number, b: number) =&gt; a + b, 0);\n}\n"}
+  ]
+}'</span>
+curl -X POST localhost:7420/api/workflows/&lt;id&gt;/trigger -H <span class="s">'content-type: application/json'</span> -d <span class="s">'{}'</span>
+curl localhost:7420/api/runs/&lt;run_id&gt;     <span class="c"># states, results, logs</span>
+curl -N localhost:7420/api/events          <span class="c"># live SSE stream</span></pre>
+</section>
+
+<section id="concepts">
+<h2>Concepts</h2>
+<h3>Workflow → Run → TaskRun</h3>
+<p>A <b>workflow</b> is a named DAG spec (tasks + triggers + params). Triggering it creates a
+<b>run</b>; each task in the DAG gets a <b>task run</b>. The orchestrator validates the graph at
+deploy time (duplicate ids, unknown deps, cycles → HTTP 400), then executes in topological
+layers — every task in a layer runs concurrently, bounded by <code>max_parallel_tasks</code>.</p>
+<h3>State machine</h3>
+<pre>pending → running → completed | failed | cancelled   <span class="c">(terminal states never transition)</span></pre>
+<p>A failed task (after its retries) fails the run; the current layer finishes, and tasks that
+were never reached are marked <code>cancelled</code>. Workload stack traces land in the task's
+logs as <code>[trace]</code> lines.</p>
+<h3>Data flow</h3>
+<p>Each task receives <code>params</code> (run params merged with task params — task overrides,
+<code>null</code> keeps base) and <code>inputs</code> — an object mapping each
+<code>depends_on</code> task id to that task's returned value, including across languages.</p>
+<h3>Events</h3>
+<p>Every state change, log line, ingest batch, and function invocation broadcasts a typed event
+(<code>run_updated</code>, <code>task_updated</code>, <code>log</code>, <code>ingested</code>,
+<code>function_invoked</code>) on an in-process bus. SSE endpoints, the console, and the SDKs all
+consume the same stream.</p>
+</section>
+
+<section id="tasks">
+<h2>Writing tasks</h2>
+<p>A task is a <b>self-contained module</b> with one entrypoint. It runs in an isolated worker
+process, so imports go inside the module and there are no closure captures.</p>
+<pre><span class="c"># runtime: python</span>
+<span class="k">def</span> <span class="f">handler</span>(params, inputs):
+    <span class="f">print</span>(<span class="s">"logs stream live to the console and SDKs"</span>)
+    <span class="k">return</span> {<span class="s">"any"</span>: <span class="s">"json"</span>}</pre>
+<pre><span class="c">// runtime: typescript (Node 22 type-stripping) or javascript</span>
+<span class="k">export async function</span> <span class="f">handler</span>(params: <span class="p">any</span>, inputs: <span class="p">any</span>) {
+  <span class="k">return</span> { any: <span class="s">"json"</span> };
+}</pre>
+<p>Per-task knobs: <code>depends_on</code>, <code>retries</code> (attempts = retries + 1),
+<code>timeout_secs</code> (default 300 — the process/sandbox is killed on expiry),
+<code>params</code>. Return values must be JSON-serializable; keep them small and pass heavy
+data through datasets (<a href="#data">below</a>).</p>
+</section>
+
+<section id="triggers">
+<h2>Triggers</h2>
+<table><thead><tr><th>Trigger</th><th>Behavior</th></tr></thead><tbody>
+<tr><td>manual / SDK / MCP</td><td><code>POST /api/workflows/{id}/trigger</code> with optional <code>{"params": {...}}</code> merged over workflow params.</td></tr>
+<tr><td>every_secs</td><td>Interval schedule. Due-times are tracked in memory and seeded at <i>now + interval</i>, so a restart waits one interval instead of stampeding.</td></tr>
+<tr><td>on_ingest</td><td>Runs after every batch ingested into the named dataset. Trigger params: <code>{dataset, records, bytes, path}</code> — tasks read the NDJSON file at <code>path</code>; the payload never rides through the API.</td></tr>
+</tbody></table>
+</section>
+
+<section id="api">
+<h2>HTTP API</h2>
+<p>JSON in/out; errors are <code>{"error": "message"}</code> with a matching status code.</p>
+<table><thead><tr><th>Endpoint</th><th>Description</th></tr></thead><tbody>
+<tr><td>GET /api/healthz</td><td>Liveness probe.</td></tr>
+<tr><td>GET /api/stats</td><td>Aggregate counters (workflows, runs by state, functions, datasets, ingested volume).</td></tr>
+<tr><td>GET·POST /api/workflows</td><td>List / create (DAG-validated). <code>PUT/DELETE /api/workflows/{id}</code> to update/remove.</td></tr>
+<tr><td>POST /api/workflows/{id}/trigger</td><td>Start a run → <code>202</code> + run object.</td></tr>
+<tr><td>GET /api/runs?workflow_id&amp;limit</td><td>Run history. <code>GET /api/runs/{id}</code> → run + every task's state/result/error/logs.</td></tr>
+<tr><td>GET /api/events</td><td><b>SSE</b> stream of all events; <code>GET /api/runs/{id}/events</code> scopes to one run.</td></tr>
+<tr><td>GET·POST /api/functions</td><td>List / deploy serverless functions (upsert by name). <code>GET/DELETE /api/functions/{name}</code>.</td></tr>
+<tr><td>POST /api/functions/{name}/invoke</td><td>Invoke → <code>{ok, result, logs, duration_ms}</code>. <code>/invoke/stream</code> streams SSE <code>log</code> events then <code>result</code>/<code>error</code>.</td></tr>
+<tr><td>POST /api/ingest/{dataset}</td><td><b>Streaming</b> NDJSON ingestion — body consumed chunk-by-chunk, appended to the dataset file, counted, then <code>on_ingest</code> workflows fire. <code>GET /api/datasets</code> lists totals.</td></tr>
+<tr><td>POST /api/query</td><td><code>{"sql", "limit"?, "connector"?}</code> → <code>{rows, row_count, truncated, elapsed_ms}</code>. Default engine: embedded Polars; <code>connector</code> routes to Postgres/ClickHouse/chDB.</td></tr>
+<tr><td>POST /api/execute</td><td><code>{"runtime", "code", "params"?, "timeout_secs"?}</code> — run one snippet on the warm pool → result + logs, or <code>{ok:false, error, trace}</code>.</td></tr>
+<tr><td>GET·POST /api/connectors</td><td>External engine registry; <code>DELETE /api/connectors/{name}</code>.</td></tr>
+<tr><td>GET·POST /api/notebooks</td><td>Notebook documents (cells stored as opaque JSON); <code>GET/PUT/DELETE /api/notebooks/{id}</code>.</td></tr>
+<tr><td>POST /mcp</td><td>Model Context Protocol endpoint — see <a href="#mcp">MCP</a>.</td></tr>
+</tbody></table>
+</section>
+
+<section id="sdks">
+<h2>SDKs</h2>
+<p>Both SDKs are <b>zero-dependency</b> (Python stdlib / global fetch) and expose the same
+surface: deploy (upsert by name), trigger &amp; wait, runs, functions, ingest, query, execute,
+and live event streaming.</p>
+<h3>Python — <code>pip install -e sdks/python</code></h3>
+<pre><span class="k">from</span> cortex_sdk <span class="k">import</span> CortexClient, Flow, task
+
+<span class="p">@task</span>
+<span class="k">def</span> <span class="f">extract</span>(params, inputs):
+    <span class="k">return</span> {<span class="s">"values"</span>: <span class="f">list</span>(<span class="f">range</span>(params[<span class="s">"n"</span>]))}
+
+<span class="p">@task</span>(depends_on=[extract], retries=<span class="n">2</span>)
+<span class="k">def</span> <span class="f">total</span>(params, inputs):
+    <span class="k">return</span> <span class="f">sum</span>(inputs[<span class="s">"extract"</span>][<span class="s">"values"</span>])
+
+client = <span class="f">CortexClient</span>(<span class="s">"http://localhost:7420"</span>)
+wf  = client.<span class="f">deploy</span>(<span class="f">Flow</span>(<span class="s">"sum"</span>, params={<span class="s">"n"</span>: <span class="n">100</span>}, tasks=[extract, total]))
+run = client.<span class="f">trigger</span>(wf[<span class="s">"id"</span>], wait=<span class="n">True</span>)
+
+<span class="k">for</span> event <span class="k">in</span> client.<span class="f">stream_run</span>(run[<span class="s">"id"</span>]):   <span class="c"># live SSE</span>
+    <span class="f">print</span>(event[<span class="s">"type"</span>], event.<span class="f">get</span>(<span class="s">"line"</span>, <span class="s">""</span>))</pre>
+<h3>TypeScript — <code>@cortex/sdk</code></h3>
+<pre><span class="k">import</span> { CortexClient, flow, task } <span class="k">from</span> <span class="s">"@cortex/sdk"</span>;
+
+<span class="k">const</span> extract = <span class="f">task</span>(<span class="s">"extract"</span>, <span class="k">async</span> (p) =&gt; ({ values: [...] }));
+<span class="k">const</span> rank = <span class="f">task</span>(<span class="s">"rank"</span>, { runtime: <span class="s">"python"</span>, code: <span class="s">"..."</span> },
+                 { dependsOn: [extract] });  <span class="c">// mixed runtimes</span>
+
+<span class="k">const</span> client = <span class="k">new</span> <span class="f">CortexClient</span>();
+<span class="k">const</span> wf = <span class="k">await</span> client.<span class="f">deploy</span>(<span class="f">flow</span>(<span class="s">"ranker"</span>, [extract, rank]));
+<span class="k">for await</span> (<span class="k">const</span> ev <span class="k">of</span> client.<span class="f">streamRun</span>(run.id)) { <span class="c">/* live */</span> }</pre>
+<p>Handler-function tasks are serialized as source (<code>Function.prototype.toString()</code> /
+<code>inspect.getsource</code>) — they must be self-contained; closures don't survive.</p>
+</section>
+
+<section id="bindings">
+<h2>In-task bindings</h2>
+<p>Every task and function gets platform bindings injected into its runtime —
+<code>import cortex</code> in Python, the <code>cortex</code> global in JS/TS — no packages needed
+in the worker environment:</p>
+<pre><span class="k">import</span> cortex
+
+<span class="k">def</span> <span class="f">handler</span>(params, inputs):
+    rows = cortex.<span class="f">query</span>(<span class="s">"SELECT zone, AVG(value) v FROM telemetry GROUP BY zone"</span>)
+    cortex.<span class="f">ingest</span>(<span class="s">"zone-aggregates"</span>, rows)      <span class="c"># derived dataset</span>
+    <span class="k">return</span> cortex.<span class="f">invoke</span>(<span class="s">"notify"</span>, {<span class="s">"n"</span>: <span class="f">len</span>(rows)})</pre>
+<p><code>cortex.query(sql, limit=)</code> · <code>cortex.ingest(dataset, records)</code> ·
+<code>cortex.invoke(name, params)</code>. Calls go to <code>CORTEX_API_URL</code>
+(set automatically) and bypass HTTP proxies.</p>
+</section>
+
+<section id="mcp">
+<h2>MCP — the agent surface</h2>
+<pre>claude mcp add --transport http cortex http://localhost:7420/mcp</pre>
+<p>The built-in Model Context Protocol server (streamable HTTP, stateless JSON-RPC) exposes
+<b>13 tools</b>: <code>cortex_stats</code>, <code>execute_code</code>, <code>query</code>,
+<code>ingest</code>, <code>list_datasets</code>, <code>list_workflows</code>,
+<code>create_workflow</code>, <code>trigger_workflow</code>, <code>get_run</code>,
+<code>list_runs</code>, <code>invoke_function</code>, <code>create_function</code>,
+<code>create_notebook</code>.</p>
+<p>Because workflows are plain JSON and the server returns structured validation errors, an
+agent can loop: <i>write code → create_workflow → trigger → read failure trace → patch →
+re-trigger</i> — a self-correcting pipeline builder with Cortex as the execution substrate.</p>
+</section>
+
+<section id="data">
+<h2>Datasets &amp; SQL</h2>
+<p><b>Ingestion</b>: <code>POST /api/ingest/{dataset}</code> streams NDJSON to disk
+chunk-by-chunk (~780 MB/s measured; gigabyte bodies never sit in memory). Datasets are
+append-only NDJSON files plus running totals.</p>
+<p><b>Query</b>: every dataset registers as a SQL table (dashed names also get an underscore
+alias) on the embedded <a href="https://pola.rs">Polars</a> engine — lazy scans with projection
+and predicate pushdown, joins across datasets, executed off the async runtime. A
+<code>GROUP BY</code> over 1.8M rows answers in ~250 ms.</p>
+<pre>SELECT zone, COUNT(*) AS n, AVG(value) AS avg_v
+FROM telemetry WHERE value &gt; 10 GROUP BY zone ORDER BY avg_v DESC</pre>
+<p>Results are row-capped (default 10k, max 200k) with an explicit <code>truncated</code> flag —
+the API returns summaries, not datasets.</p>
+</section>
+
+<section id="connectors">
+<h2>Connectors</h2>
+<table><thead><tr><th>Kind</th><th>How it connects</th></tr></thead><tbody>
+<tr><td>postgres</td><td>Native protocol (<code>postgres://user:pass@host:5432/db</code>); rows converted to JSON per column type.</td></tr>
+<tr><td>clickhouse</td><td>HTTP interface (<code>http://host:8123/?user=…</code>); <code>FORMAT JSONEachRow</code> appended unless the query names a format.</td></tr>
+<tr><td>chdb</td><td>Embedded ClickHouse executed <b>inside the Python worker runtime</b> — <code>pip install chdb</code> where workers run; no URL needed.</td></tr>
+</tbody></table>
+<p>Register once (<code>POST /api/connectors {"name","kind","url"}</code>), then point any query
+at it: API <code>{"connector": "warehouse"}</code>, SDK <code>client.query(sql,
+connector="warehouse")</code>, or the dropdown in notebook SQL cells and the Data page.</p>
+<div class="callout">Connector URLs (credentials included) are stored in SQLite as plaintext —
+treat the data directory as sensitive.</div>
+</section>
+
+<section id="notebooks">
+<h2>Notebooks</h2>
+<p>Observable-style executable documents in the console: <b>markdown</b> cells,
+<b>code</b> cells (Python/TS/JS, run on the warm pool via <code>/api/execute</code>), and
+<b>SQL</b> cells (Polars or any connector) — with a chart view (bar/line, x/y pickers) on any
+tabular result. Editors are CodeMirror 6: autocomplete, bracket matching, multi-cursor,
+<code>⌘⏎</code> to run. Cells and their outputs persist with the document, so notebooks reopen
+with results. Storage is schema-free JSON — the console owns the cell format.</p>
+</section>
+
+<section id="isolation">
+<h2>Isolation &amp; the worker pool</h2>
+<table><thead><tr><th>Mode</th><th>What runs</th><th>Use when</th></tr></thead><tbody>
+<tr><td>process</td><td>Direct child processes + <b>warm pool</b> (interpreters reused across tasks)</td><td>Trusted code; lowest latency (~1 ms/task)</td></tr>
+<tr><td>container</td><td>One <code>docker/podman run --rm</code> per task: no network, read-only rootfs, pid/mem/CPU caps</td><td>Semi-trusted code, dependency isolation</td></tr>
+<tr><td>microvm</td><td>Same container interface via a VM-backed OCI runtime (Kata, Firecracker) — one guest kernel per task</td><td>Untrusted / multi-tenant workloads</td></tr>
+</tbody></table>
+<p>Pool rules: a clean finish (including a caught in-task error) returns the worker; timeouts
+and protocol violations kill it; workers retire after 128 jobs; up to 8 stay warm per runtime.
+One Node pool serves JS and TS. Container/microVM modes never pool — a fresh sandbox per task
+is their purpose. Jobs share an interpreter but never a module (fresh import per job, like
+warm lambdas).</p>
+</section>
+
+<section id="performance">
+<h2>Performance</h2>
+<table><thead><tr><th>Metric</th><th>Measured (release build, dev container)</th></tr></thead><tbody>
+<tr><td>control-plane call</td><td>0.6 ms p50</td></tr>
+<tr><td>serverless invoke</td><td>Python 1.2 ms · JS 1.3 ms · TS 1.6 ms p50 (warm) — vs 36/68/124 ms cold</td></tr>
+<tr><td>3-task workflow e2e</td><td>7.4 ms p50 (py → py → js, results passed between)</td></tr>
+<tr><td>parallel invocations</td><td>~775/s at 32-way concurrency</td></tr>
+<tr><td>ingestion</td><td>~780 MB/s streaming NDJSON (1.8M rows in 0.15 s)</td></tr>
+<tr><td>SQL over 1.8M rows</td><td>~250 ms GROUP BY (embedded Polars)</td></tr>
+<tr><td>footprint</td><td>16 MB RAM idle · workers ~10 MB (py) / ~46 MB (node) · 205 MB peak during heaviest query · 67 MB binary</td></tr>
+</tbody></table>
+<p>Sizing: a 512 MB VPS runs light workloads (trim <code>CORTEX_WORKER_MAX_IDLE</code>);
+1 GB is comfortable for everything documented here; add headroom roughly equal to your largest
+query's working set.</p>
+</section>
+
+<section id="deploy">
+<h2>Deployment</h2>
+<h3>Docker Compose</h3>
+<pre>docker compose up --build     <span class="c"># console + API on :7420, data in a named volume</span></pre>
+<h3>Coolify</h3>
+<ol>
+<li><b>+ New Resource → Docker Compose</b>, point at the repository.</li>
+<li>Set <b>Docker Compose Location</b> to <code>/docker-compose.coolify.yml</code>.</li>
+<li>Assign a domain — the <code>SERVICE_FQDN_CORTEX_7420</code> magic variable routes Coolify's
+proxy to the server (SSE included). The healthcheck drives status and rolling restarts.</li>
+</ol>
+<h3>Bare binary</h3>
+<pre>cargo build --release -p cortex-server
+CORTEX_DATA_DIR=/var/lib/cortex ./target/release/cortex-server</pre>
+</section>
+
+<section id="config">
+<h2>Configuration reference</h2>
+<table><thead><tr><th>Variable</th><th>Default</th><th>Meaning</th></tr></thead><tbody>
+<tr><td>CORTEX_PORT</td><td>7420</td><td>HTTP port (API, console, MCP).</td></tr>
+<tr><td>CORTEX_DATA_DIR</td><td>./data</td><td>SQLite file + dataset NDJSON files.</td></tr>
+<tr><td>CORTEX_CONSOLE_DIST</td><td>./console/dist</td><td>Built console to serve at <code>/</code> (skipped if absent).</td></tr>
+<tr><td>CORTEX_ISOLATION</td><td>process</td><td><code>process</code> | <code>container</code> | <code>microvm</code>.</td></tr>
+<tr><td>CORTEX_WORKER_POOL</td><td>1</td><td><code>0</code> disables warm pooling (process mode).</td></tr>
+<tr><td>CORTEX_WORKER_MAX_IDLE</td><td>8</td><td>Warm workers kept per runtime.</td></tr>
+<tr><td>CORTEX_WORKER_MAX_JOBS</td><td>128</td><td>Jobs before a worker retires.</td></tr>
+<tr><td>CORTEX_PYTHON_BIN / CORTEX_NODE_BIN</td><td>python3 / node</td><td>Interpreter binaries (process mode).</td></tr>
+<tr><td>CORTEX_CONTAINER_ENGINE</td><td>docker</td><td>Engine for container/microvm modes.</td></tr>
+<tr><td>CORTEX_VM_RUNTIME</td><td>kata</td><td>OCI runtime class for microvm mode.</td></tr>
+<tr><td>CORTEX_PYTHON_IMAGE / CORTEX_NODE_IMAGE</td><td>python:3.12-slim / node:22-slim</td><td>Sandbox images.</td></tr>
+<tr><td>CORTEX_WORKER_MEMORY / CORTEX_WORKER_CPUS</td><td>512m / 1</td><td>Per-sandbox caps.</td></tr>
+<tr><td>CORTEX_API_URL</td><td>auto</td><td>Where in-task bindings call back (set for workers automatically).</td></tr>
+<tr><td>RUST_LOG</td><td>info</td><td>Tracing filter.</td></tr>
+</tbody></table>
+</section>
+
+</main>
+</div>
+<script>
+// highlight the sidebar link for the section in view
+const links = [...document.querySelectorAll("#toc a")];
+const byId = Object.fromEntries(links.map(a => [a.getAttribute("href").slice(1), a]));
+const so = new IntersectionObserver(es => {
+  es.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(a => a.classList.remove("on"));
+      byId[e.target.id]?.classList.add("on");
+    }
+  });
+}, { rootMargin: "-10% 0px -80% 0px" });
+document.querySelectorAll("main section[id]").forEach(s => so.observe(s));
+</script>
+</body>
+</html>

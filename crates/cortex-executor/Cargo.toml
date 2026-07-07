@@ -1,0 +1,17 @@
+[package]
+name = "cortex-executor"
+description = "Process-isolated execution of Python and TypeScript/JavaScript workloads with streamed logs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+cortex-core = { path = "../cortex-core" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tempfile = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }

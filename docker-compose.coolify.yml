@@ -1,0 +1,42 @@
+# Coolify deployment.
+#
+# In Coolify: + New Resource → Docker Compose → point at this repository and
+# set "Docker Compose Location" to /docker-compose.coolify.yml. Coolify
+# builds the image from the Dockerfile, wires its proxy to port 7420 via the
+# SERVICE_FQDN magic variable below (set your domain on the resource, or let
+# Coolify generate one), provisions the data volume, and uses the healthcheck
+# for status/rolling restarts. SSE streams work through the proxy as-is.
+#
+# The API is unauthenticated by design (trusted single-tenant) — keep the
+# resource internal or put Coolify's auth/allowlist in front if exposed.
+
+services:
+  cortex:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      # Coolify replaces this with the resource's FQDN and routes it to :7420.
+      - SERVICE_FQDN_CORTEX_7420
+      - RUST_LOG=info
+      - CORTEX_PORT=7420
+      - CORTEX_DATA_DIR=/data
+      - CORTEX_CONSOLE_DIST=/app/console/dist
+      # Worker pool / isolation knobs (see README):
+      # - CORTEX_WORKER_MAX_IDLE=8
+      # - CORTEX_WORKER_MAX_JOBS=128
+      # - CORTEX_ISOLATION=process
+    expose:
+      - "7420"
+    volumes:
+      - cortex-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:7420/api/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  cortex-data:

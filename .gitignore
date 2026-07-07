@@ -1,0 +1,11 @@
+/target
+node_modules/
+dist/
+data/
+*.db
+*.db-wal
+*.db-shm
+__pycache__/
+*.egg-info/
+.venv/
+.DS_Store
