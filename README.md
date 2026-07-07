@@ -5,7 +5,8 @@ workflow DAGs, streaming data ingestion, serverless functions, and a live
 console. Think Prefect/Airflow ergonomics with a single static Rust binary at
 the core.
 
-![Dashboard](docs/screenshots/dashboard.png)
+<img width="1360" height="842" alt="Screenshot 2026-07-07 at 6 35 28 AM" src="https://github.com/user-attachments/assets/80de6315-cbd3-42f9-afe5-7d1b23515330" />
+
 
 ## What it does
 
