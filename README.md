@@ -1,4 +1,4 @@
-# Cortex
+# Rust Orchestrator
 
 **A Rust-native orchestration platform for Python and TypeScript workloads** —
 workflow DAGs, streaming data ingestion, serverless functions, and a live
