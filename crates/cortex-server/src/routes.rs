@@ -685,3 +685,30 @@ async fn ingest(
         "triggered_runs": triggered,
     })))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::is_safe_name;
+
+    // Contract: dataset/function/connector names match `[a-zA-Z0-9_-]{1,64}`.
+    #[test]
+    fn accepts_alphanumeric_underscore_and_dash() {
+        assert!(is_safe_name("a"));
+        assert!(is_safe_name("Sensor-Readings_01"));
+        assert!(is_safe_name("ABCxyz0123"));
+    }
+
+    #[test]
+    fn rejects_empty_and_over_64_chars() {
+        assert!(!is_safe_name(""));
+        assert!(is_safe_name(&"a".repeat(64)));
+        assert!(!is_safe_name(&"a".repeat(65)));
+    }
+
+    #[test]
+    fn rejects_disallowed_characters() {
+        for bad in ["has space", "dot.name", "slash/name", "café", "semi;colon", "quote\"x"] {
+            assert!(!is_safe_name(bad), "should reject {bad:?}");
+        }
+    }
+}
