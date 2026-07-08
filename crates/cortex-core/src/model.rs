@@ -293,3 +293,163 @@ pub struct Stats {
     pub records_ingested: u64,
     pub bytes_ingested: u64,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::TimeZone;
+    use serde_json::json;
+
+    #[test]
+    fn runtime_as_str_matches_serde_lowercase() {
+        for (rt, s) in [
+            (Runtime::Python, "python"),
+            (Runtime::Typescript, "typescript"),
+            (Runtime::Javascript, "javascript"),
+        ] {
+            assert_eq!(rt.as_str(), s);
+            assert_eq!(serde_json::to_value(rt).unwrap(), json!(s));
+            assert_eq!(serde_json::from_value::<Runtime>(json!(s)).unwrap(), rt);
+        }
+    }
+
+    #[test]
+    fn run_state_as_str_and_terminality() {
+        let table = [
+            (RunState::Pending, "pending", false),
+            (RunState::Running, "running", false),
+            (RunState::Completed, "completed", true),
+            (RunState::Failed, "failed", true),
+            (RunState::Cancelled, "cancelled", true),
+        ];
+        for (state, s, terminal) in table {
+            assert_eq!(state.as_str(), s);
+            assert_eq!(state.is_terminal(), terminal);
+            assert_eq!(serde_json::to_value(state).unwrap(), json!(s));
+        }
+    }
+
+    #[test]
+    fn connector_kind_as_str() {
+        assert_eq!(ConnectorKind::Postgres.as_str(), "postgres");
+        assert_eq!(ConnectorKind::Clickhouse.as_str(), "clickhouse");
+        assert_eq!(ConnectorKind::Chdb.as_str(), "chdb");
+    }
+
+    fn workflow_named(name: &str) -> Workflow {
+        Workflow {
+            id: Uuid::new_v4(),
+            spec: WorkflowSpec {
+                name: name.into(),
+                description: None,
+                params: Value::Null,
+                tasks: vec![],
+                triggers: TriggerSpec::default(),
+                max_parallel_tasks: default_concurrency(),
+            },
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+        }
+    }
+
+    #[test]
+    fn run_new_starts_pending_and_copies_workflow_identity() {
+        let wf = workflow_named("etl");
+        let run = Run::new(&wf, json!({"x": 1}), "manual");
+        assert_eq!(run.state, RunState::Pending);
+        assert_eq!(run.workflow_id, wf.id);
+        assert_eq!(run.workflow_name, "etl");
+        assert_eq!(run.trigger, "manual");
+        assert_eq!(run.params, json!({"x": 1}));
+        assert!(run.error.is_none());
+        assert!(run.started_at.is_none());
+        assert!(run.finished_at.is_none());
+    }
+
+    #[test]
+    fn run_duration_is_none_until_both_timestamps_present() {
+        let mut run = Run::new(&workflow_named("w"), Value::Null, "sdk");
+        assert_eq!(run.duration_ms(), None);
+        let start = Utc.timestamp_opt(1_000, 0).unwrap();
+        run.started_at = Some(start);
+        assert_eq!(run.duration_ms(), None);
+        run.finished_at = Some(start + chrono::Duration::milliseconds(1500));
+        assert_eq!(run.duration_ms(), Some(1500));
+    }
+
+    #[test]
+    fn task_run_defaults_name_to_id_when_unset() {
+        let run_id = Uuid::new_v4();
+        let spec = TaskSpec {
+            id: "extract".into(),
+            name: None,
+            runtime: Runtime::Python,
+            code: "def handler(p, i): return 1".into(),
+            depends_on: vec![],
+            params: Value::Null,
+            timeout_secs: 10,
+            retries: 2,
+        };
+        let tr = TaskRun::new(run_id, &spec);
+        assert_eq!(tr.run_id, run_id);
+        assert_eq!(tr.task_id, "extract");
+        assert_eq!(tr.name, "extract");
+        assert_eq!(tr.state, RunState::Pending);
+        assert_eq!(tr.attempts, 0);
+        assert!(tr.logs.is_empty());
+    }
+
+    #[test]
+    fn task_run_uses_explicit_name_when_present() {
+        let spec = TaskSpec {
+            id: "t1".into(),
+            name: Some("Friendly".into()),
+            runtime: Runtime::Javascript,
+            code: String::new(),
+            depends_on: vec![],
+            params: Value::Null,
+            timeout_secs: default_timeout(),
+            retries: 0,
+        };
+        assert_eq!(TaskRun::new(Uuid::new_v4(), &spec).name, "Friendly");
+    }
+
+    #[test]
+    fn task_spec_deserializes_with_field_defaults() {
+        let spec: TaskSpec = serde_json::from_value(json!({
+            "id": "only",
+            "runtime": "python",
+            "code": "x",
+        }))
+        .unwrap();
+        assert_eq!(spec.timeout_secs, 300);
+        assert_eq!(spec.retries, 0);
+        assert!(spec.depends_on.is_empty());
+        assert!(spec.name.is_none());
+        assert_eq!(spec.params, Value::Null);
+    }
+
+    #[test]
+    fn workflow_spec_defaults_concurrency_and_triggers() {
+        let spec: WorkflowSpec = serde_json::from_value(json!({
+            "name": "w",
+            "tasks": [],
+        }))
+        .unwrap();
+        assert_eq!(spec.max_parallel_tasks, 8);
+        assert!(spec.triggers.every_secs.is_none());
+        assert!(spec.triggers.on_ingest.is_none());
+    }
+
+    #[test]
+    fn trigger_spec_skips_none_fields_when_serializing() {
+        let v = serde_json::to_value(TriggerSpec::default()).unwrap();
+        assert_eq!(v, json!({}));
+        let v = serde_json::to_value(TriggerSpec {
+            every_secs: Some(30),
+            on_ingest: None,
+        })
+        .unwrap();
+        assert_eq!(v, json!({"every_secs": 30}));
+    }
+}
