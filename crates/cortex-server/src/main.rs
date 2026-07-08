@@ -1,5 +1,6 @@
 mod connectors;
 mod data;
+mod domain;
 mod error;
 mod mcp;
 mod orchestrator;

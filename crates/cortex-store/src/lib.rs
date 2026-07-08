@@ -384,7 +384,7 @@ impl Store {
         let mut stmt = conn.prepare("SELECT data FROM notebooks")?;
         let rows = stmt.query_map([], |r| r.get::<_, String>(0))?;
         let mut nbs: Vec<Notebook> = collect_json(rows)?;
-        nbs.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
+        nbs.sort_by_key(|n| std::cmp::Reverse(n.updated_at));
         Ok(nbs)
     }
 
