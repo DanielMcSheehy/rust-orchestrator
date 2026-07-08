@@ -23,8 +23,9 @@ use tokio::io::AsyncWriteExt;
 use tokio_stream::wrappers::{BroadcastStream, UnboundedReceiverStream};
 use uuid::Uuid;
 
+use crate::domain;
 use crate::error::{ApiError, ApiResult};
-use crate::orchestrator::{launch_run, merge_params};
+use crate::orchestrator::launch_run;
 use crate::state::SharedState;
 
 pub fn api_router() -> Router<SharedState> {
@@ -219,27 +220,8 @@ async fn create_function(
     State(state): State<SharedState>,
     Json(spec): Json<FunctionSpec>,
 ) -> ApiResult<(StatusCode, Json<Function>)> {
-    if spec.name.is_empty() || !is_safe_name(&spec.name) {
-        return Err(ApiError::bad_request(
-            "function name must match [a-zA-Z0-9_-]{1,64}",
-        ));
-    }
-    let now = Utc::now();
-    let func = match state.store.get_function(&spec.name) {
-        Ok(mut existing) => {
-            existing.spec = spec;
-            existing.updated_at = now;
-            existing
-        }
-        Err(_) => Function {
-            id: Uuid::new_v4(),
-            spec,
-            invocations: 0,
-            created_at: now,
-            updated_at: now,
-        },
-    };
-    state.store.put_function(&func)?;
+    domain::require_safe_name("function", &spec.name)?;
+    let func = domain::upsert_function(&state, spec)?;
     Ok((StatusCode::CREATED, Json(func)))
 }
 
@@ -269,35 +251,17 @@ async fn invoke_function(
     Path(name): Path<String>,
     body: Option<Json<InvokeBody>>,
 ) -> ApiResult<Json<Value>> {
-    let mut func = state.store.get_function(&name)?;
     let params = body.map(|Json(b)| b.params).unwrap_or(Value::Null);
-    let started = std::time::Instant::now();
-    let exec = state
-        .executor
-        .execute(
-            ExecRequest {
-                runtime: func.spec.runtime,
-                code: func.spec.code.clone(),
-                params: merge_params(&Value::Null, &params),
-                inputs: Value::Null,
-                timeout_secs: func.spec.timeout_secs,
-            },
-            None,
-        )
-        .await;
-    let duration_ms = started.elapsed().as_millis() as u64;
-
-    func.invocations += 1;
-    state.store.put_function(&func)?;
-    let ok = exec.is_ok();
+    let inv = domain::invoke_function(&state, &name, params, None).await?;
+    let duration_ms = inv.duration_ms;
     state.emit(CortexEvent::FunctionInvoked {
         ts: Utc::now(),
         name: name.clone(),
-        ok,
+        ok: inv.result.is_ok(),
         duration_ms,
     });
 
-    match exec {
+    match inv.result {
         Ok(outcome) => Ok(Json(json!({
             "ok": true,
             "result": outcome.value,
@@ -319,7 +283,8 @@ async fn invoke_function_stream(
     Path(name): Path<String>,
     body: Option<Json<InvokeBody>>,
 ) -> ApiResult<impl IntoResponse> {
-    let mut func = state.store.get_function(&name)?;
+    // Fail fast with 404 if the function doesn't exist before opening the SSE.
+    state.store.get_function(&name)?;
     let params = body.map(|Json(b)| b.params).unwrap_or(Value::Null);
 
     let (event_tx, event_rx) = tokio::sync::mpsc::unbounded_channel::<Event>();
@@ -334,31 +299,19 @@ async fn invoke_function_stream(
 
     let exec_state = state.clone();
     tokio::spawn(async move {
-        let started = std::time::Instant::now();
-        let exec = exec_state
-            .executor
-            .execute(
-                ExecRequest {
-                    runtime: func.spec.runtime,
-                    code: func.spec.code.clone(),
-                    params,
-                    inputs: Value::Null,
-                    timeout_secs: func.spec.timeout_secs,
-                },
-                Some(log_tx),
-            )
-            .await;
-        let duration_ms = started.elapsed().as_millis() as u64;
-        func.invocations += 1;
-        let _ = exec_state.store.put_function(&func);
-        let ok = exec.is_ok();
+        let inv = match domain::invoke_function(&exec_state, &name, params, Some(log_tx)).await {
+            Ok(inv) => inv,
+            // The function was deleted between the check above and now.
+            Err(_) => return,
+        };
+        let duration_ms = inv.duration_ms;
         exec_state.emit(CortexEvent::FunctionInvoked {
             ts: Utc::now(),
-            name: func.spec.name.clone(),
-            ok,
+            name: inv.func_name,
+            ok: inv.result.is_ok(),
             duration_ms,
         });
-        let final_event = match exec {
+        let final_event = match inv.result {
             Ok(outcome) => Event::default().event("result").data(
                 json!({ "result": outcome.value, "duration_ms": duration_ms }).to_string(),
             ),
@@ -402,42 +355,17 @@ async fn query(
     let limit = body.limit.clamp(1, 200_000);
     let started = std::time::Instant::now();
 
-    if let Some(name) = &body.connector {
-        let connector = state.store.get_connector(name)?;
-        let result = crate::connectors::query(&state, &connector, &body.sql, limit)
-            .await
-            .map_err(ApiError::bad_request)?;
-        return Ok(Json(json!({
-            "rows": result.rows,
-            "row_count": result.rows.len(),
-            "truncated": result.truncated,
-            "connector": name,
-            "elapsed_ms": started.elapsed().as_millis() as u64,
-        })));
-    }
-
-    let datasets: Vec<String> = state
-        .store
-        .list_datasets()?
-        .into_iter()
-        .map(|d| d.name)
-        .collect();
-    let dir = state.data_dir.join("datasets");
-    let outcome = tokio::task::spawn_blocking(move || {
-        crate::data::run_query(&dir, &datasets, &body.sql, limit)
-    })
-    .await
-    .map_err(|e| ApiError::internal(format!("query task failed: {e}")))?
-    .map_err(ApiError::bad_request)?;
-
-    let rows: Value = serde_json::from_slice(&outcome.rows_json)
-        .map_err(|e| ApiError::internal(format!("bad result encoding: {e}")))?;
-    Ok(Json(json!({
-        "rows": rows,
-        "row_count": outcome.row_count,
-        "truncated": outcome.truncated,
+    let result = domain::run_sql(&state, &body.sql, limit, body.connector.as_deref()).await?;
+    let mut response = json!({
+        "rows": result.rows,
+        "row_count": result.row_count,
+        "truncated": result.truncated,
         "elapsed_ms": started.elapsed().as_millis() as u64,
-    })))
+    });
+    if let Some(name) = result.connector {
+        response["connector"] = json!(name);
+    }
+    Ok(Json(response))
 }
 
 // ── direct code execution ────────────────────────────────────────────────
@@ -517,11 +445,7 @@ async fn create_connector(
     State(state): State<SharedState>,
     Json(body): Json<ConnectorBody>,
 ) -> ApiResult<(StatusCode, Json<Connector>)> {
-    if !is_safe_name(&body.name) {
-        return Err(ApiError::bad_request(
-            "connector name must match [a-zA-Z0-9_-]{1,64}",
-        ));
-    }
+    domain::require_safe_name("connector", &body.name)?;
     if matches!(body.kind, ConnectorKind::Postgres | ConnectorKind::Clickhouse)
         && body.url.is_empty()
     {
@@ -602,14 +526,6 @@ async fn delete_notebook(
     Ok(StatusCode::NO_CONTENT)
 }
 
-fn is_safe_name(name: &str) -> bool {
-    !name.is_empty()
-        && name.len() <= 64
-        && name
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
-}
-
 /// Streaming NDJSON ingestion. The request body is consumed chunk-by-chunk
 /// and appended to the dataset's NDJSON file — gigabyte payloads never sit
 /// in memory. Workflows with an `on_ingest` trigger for this dataset are
@@ -619,11 +535,7 @@ async fn ingest(
     Path(dataset): Path<String>,
     body: Body,
 ) -> ApiResult<Json<Value>> {
-    if !is_safe_name(&dataset) {
-        return Err(ApiError::bad_request(
-            "dataset name must match [a-zA-Z0-9_-]{1,64}",
-        ));
-    }
+    domain::require_safe_name("dataset", &dataset)?;
 
     let dir = state.data_dir.join("datasets");
     tokio::fs::create_dir_all(&dir).await?;

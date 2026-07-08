@@ -204,30 +204,10 @@ async fn dispatch(state: &SharedState, tool: &str, args: Value) -> Result<Value,
         "query" => {
             let sql = args["sql"].as_str().ok_or("missing sql")?;
             let limit = args["limit"].as_u64().unwrap_or(1000).clamp(1, 100_000) as usize;
-            if let Some(connector_name) = args["connector"].as_str() {
-                let connector = state
-                    .store
-                    .get_connector(connector_name)
-                    .map_err(|e| err(&e))?;
-                let res = crate::connectors::query(state, &connector, sql, limit).await?;
-                return Ok(json!({ "rows": res.rows, "truncated": res.truncated }));
-            }
-            let datasets: Vec<String> = state
-                .store
-                .list_datasets()
-                .map_err(|e| err(&e))?
-                .into_iter()
-                .map(|d| d.name)
-                .collect();
-            let dir = state.data_dir.join("datasets");
-            let sql = sql.to_string();
-            let outcome = tokio::task::spawn_blocking(move || {
-                crate::data::run_query(&dir, &datasets, &sql, limit)
-            })
-            .await
-            .map_err(|e| err(&e))??;
-            let rows: Value = serde_json::from_slice(&outcome.rows_json).map_err(|e| err(&e))?;
-            Ok(json!({ "rows": rows, "truncated": outcome.truncated }))
+            let result = crate::domain::run_sql(state, sql, limit, args["connector"].as_str())
+                .await
+                .map_err(|e| e.message)?;
+            Ok(json!({ "rows": result.rows, "truncated": result.truncated }))
         }
 
         "ingest" => {
@@ -339,23 +319,11 @@ async fn dispatch(state: &SharedState, tool: &str, args: Value) -> Result<Value,
 
         "invoke_function" => {
             let name = args["name"].as_str().ok_or("missing name")?;
-            let mut func = state.store.get_function(name).map_err(|e| err(&e))?;
-            let outcome = state
-                .executor
-                .execute(
-                    ExecRequest {
-                        runtime: func.spec.runtime,
-                        code: func.spec.code.clone(),
-                        params: args.get("params").cloned().unwrap_or(Value::Null),
-                        inputs: Value::Null,
-                        timeout_secs: func.spec.timeout_secs,
-                    },
-                    None,
-                )
+            let params = args.get("params").cloned().unwrap_or(Value::Null);
+            let inv = crate::domain::invoke_function(state, name, params, None)
                 .await
-                .map_err(|e| err(&e))?;
-            func.invocations += 1;
-            let _ = state.store.put_function(&func);
+                .map_err(|e| e.message)?;
+            let outcome = inv.result.map_err(|e| err(&e))?;
             Ok(json!({ "result": outcome.value, "logs": outcome.logs }))
         }
 
@@ -367,22 +335,7 @@ async fn dispatch(state: &SharedState, tool: &str, args: Value) -> Result<Value,
                 "description": args.get("description").cloned().unwrap_or(Value::Null),
             }))
             .map_err(|e| err(&e))?;
-            let now = Utc::now();
-            let func = match state.store.get_function(&spec.name) {
-                Ok(mut f) => {
-                    f.spec = spec;
-                    f.updated_at = now;
-                    f
-                }
-                Err(_) => cortex_core::Function {
-                    id: Uuid::new_v4(),
-                    spec,
-                    invocations: 0,
-                    created_at: now,
-                    updated_at: now,
-                },
-            };
-            state.store.put_function(&func).map_err(|e| err(&e))?;
+            let func = crate::domain::upsert_function(state, spec).map_err(|e| e.message)?;
             serde_json::to_value(func).map_err(|e| err(&e))
         }
 
