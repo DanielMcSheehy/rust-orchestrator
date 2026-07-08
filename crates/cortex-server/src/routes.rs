@@ -12,8 +12,8 @@ use axum::routing::{delete, get, post};
 use axum::{Json, Router};
 use chrono::Utc;
 use cortex_core::{
-    validate_dag, Connector, ConnectorKind, CortexEvent, Function, FunctionSpec, Notebook, Run,
-    Runtime, Workflow, WorkflowSpec,
+    is_safe_name, validate_dag, Connector, ConnectorKind, CortexEvent, Function, FunctionSpec,
+    Notebook, Run, Runtime, Workflow, WorkflowSpec,
 };
 use cortex_executor::{ExecError, ExecRequest};
 use futures::StreamExt;
@@ -600,14 +600,6 @@ async fn delete_notebook(
 ) -> ApiResult<StatusCode> {
     state.store.delete_notebook(id)?;
     Ok(StatusCode::NO_CONTENT)
-}
-
-fn is_safe_name(name: &str) -> bool {
-    !name.is_empty()
-        && name.len() <= 64
-        && name
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
 }
 
 /// Streaming NDJSON ingestion. The request body is consumed chunk-by-chunk

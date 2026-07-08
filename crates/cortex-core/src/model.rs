@@ -22,6 +22,21 @@ impl Runtime {
     }
 }
 
+/// Whether a user-supplied identifier (dataset / function / connector name)
+/// is safe to use in filesystem paths and storage keys: `[a-zA-Z0-9_-]{1,64}`.
+///
+/// This is the single source of truth for name validation — every API surface
+/// (REST routes, MCP tools) must gate untrusted names through it before they
+/// reach the store or the filesystem, so e.g. a dataset name can never contain
+/// path separators or `..` and escape the datasets directory.
+pub fn is_safe_name(name: &str) -> bool {
+    !name.is_empty()
+        && name.len() <= 64
+        && name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+}
+
 /// A single node in a workflow DAG.
 ///
 /// `code` is the task body: a Python module defining `def handler(params, inputs)`,
@@ -292,4 +307,33 @@ pub struct Stats {
     pub runs_failed: u64,
     pub records_ingested: u64,
     pub bytes_ingested: u64,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_safe_name;
+
+    #[test]
+    fn accepts_plain_identifiers() {
+        assert!(is_safe_name("events"));
+        assert!(is_safe_name("sensor-readings"));
+        assert!(is_safe_name("zone_aggregates_2"));
+        assert!(is_safe_name(&"a".repeat(64)));
+    }
+
+    #[test]
+    fn rejects_empty_and_too_long() {
+        assert!(!is_safe_name(""));
+        assert!(!is_safe_name(&"a".repeat(65)));
+    }
+
+    #[test]
+    fn rejects_path_traversal_and_separators() {
+        assert!(!is_safe_name("../etc/passwd"));
+        assert!(!is_safe_name(".."));
+        assert!(!is_safe_name("a/b"));
+        assert!(!is_safe_name("a\\b"));
+        assert!(!is_safe_name("a.ndjson"));
+        assert!(!is_safe_name("with space"));
+    }
 }
