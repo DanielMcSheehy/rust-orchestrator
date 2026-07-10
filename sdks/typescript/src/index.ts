@@ -116,6 +116,108 @@ export interface TaskOptions {
 const TERMINAL: RunState[] = ["completed", "failed", "cancelled"];
 
 /**
+ * Node 22+ runs TypeScript by replacing every type annotation with an
+ * equal-width run of spaces (offset-preserving type stripping), so
+ * `Function.prototype.toString()` returns source riddled with gaps:
+ *
+ *     async (params        , inputs         )              => {
+ *
+ * That garbage is what would land in the server and the console. Detect the
+ * artifact (multi-space runs before `,` `)` `=` `{` `=>` never occur in
+ * written code) and collapse the gaps — leading indentation and the inside
+ * of strings, template literals, and comments are left untouched. Clean
+ * sources pass through byte-for-byte.
+ */
+function collapseStrippedTypes(src: string): string {
+  if (!/ {2,}[,)]|\) {2,}[={]| {2,}=>/.test(src)) return src;
+  type Mode = "code" | "line" | "block" | "single" | "double" | "template";
+  let mode: Mode = "code";
+  const exprDepth: number[] = []; // brace depth of each nested `${ … }`
+  let out = "";
+  let atLineStart = true;
+  let i = 0;
+  while (i < src.length) {
+    const ch = src[i];
+    if (mode !== "code") {
+      // Copy verbatim; watch only for the mode's exit (and template nesting).
+      if (mode === "line" && ch === "\n") mode = "code";
+      else if (mode === "block" && ch === "*" && src[i + 1] === "/") {
+        out += "*/";
+        i += 2;
+        mode = "code";
+        continue;
+      } else if ((mode === "single" || mode === "double" || mode === "template") && ch === "\\") {
+        out += src.slice(i, i + 2);
+        i += 2;
+        continue;
+      } else if (mode === "single" && ch === "'") mode = "code";
+      else if (mode === "double" && ch === '"') mode = "code";
+      else if (mode === "template" && ch === "`") mode = "code";
+      else if (mode === "template" && ch === "$" && src[i + 1] === "{") {
+        out += "${";
+        i += 2;
+        exprDepth.push(0);
+        mode = "code";
+        continue;
+      }
+      out += ch;
+      atLineStart = ch === "\n";
+      i++;
+      continue;
+    }
+    if (ch === "\n") {
+      out += ch;
+      atLineStart = true;
+      i++;
+      continue;
+    }
+    if (atLineStart && (ch === " " || ch === "\t")) {
+      out += ch; // indentation is meaningful — keep it
+      i++;
+      continue;
+    }
+    atLineStart = false;
+    const two = src.slice(i, i + 2);
+    if (two === "//" || two === "/*") {
+      mode = two === "//" ? "line" : "block";
+      out += two;
+      i += 2;
+      continue;
+    }
+    if (ch === "'" || ch === '"' || ch === "`") {
+      mode = ch === "'" ? "single" : ch === '"' ? "double" : "template";
+      out += ch;
+      i++;
+      continue;
+    }
+    if (exprDepth.length > 0 && ch === "}" && exprDepth[exprDepth.length - 1] === 0) {
+      exprDepth.pop();
+      mode = "template";
+      out += ch;
+      i++;
+      continue;
+    }
+    if (exprDepth.length > 0 && (ch === "{" || ch === "}")) {
+      exprDepth[exprDepth.length - 1] += ch === "{" ? 1 : -1;
+    }
+    if (ch === " " && src[i + 1] === " ") {
+      let j = i;
+      while (src[j] === " ") j++;
+      const next = src[j];
+      // A stripped annotation's gap: vanish before closers/EOL, else one space.
+      if (!(next === undefined || next === "\n" || next === "," || next === ")" || next === ";" || next === "(")) {
+        out += " ";
+      }
+      i = j;
+      continue;
+    }
+    out += ch;
+    i++;
+  }
+  return out;
+}
+
+/**
  * Declare a task from a handler function (serialized and shipped to the
  * server) or from raw source code in any supported runtime.
  */
@@ -134,10 +236,10 @@ export function task(
   let code: string;
   if (typeof impl === "function") {
     runtime = options.runtime ?? "javascript";
-    code = `export const handler = ${impl.toString()};\n`;
+    code = `export const handler = ${collapseStrippedTypes(impl.toString())};\n`;
   } else {
     runtime = impl.runtime;
-    code = impl.code;
+    code = runtime === "python" ? impl.code : collapseStrippedTypes(impl.code);
   }
   return {
     id,
@@ -271,10 +373,11 @@ export class CortexClient {
     description?: string;
     timeoutSecs?: number;
   }): Promise<Json> {
+    const runtime = spec.runtime ?? "javascript";
     return this.request("POST", "/api/functions", {
       name: spec.name,
-      code: spec.code,
-      runtime: spec.runtime ?? "javascript",
+      code: runtime === "python" ? spec.code : collapseStrippedTypes(spec.code),
+      runtime,
       description: spec.description ?? null,
       timeout_secs: spec.timeoutSecs ?? 300,
     });
@@ -332,9 +435,10 @@ export class CortexClient {
     inputs?: Record<string, Json>;
     timeoutSecs?: number;
   }): Promise<{ ok: boolean; result?: Json; logs?: string[]; error?: string; duration_ms: number }> {
+    const runtime = spec.runtime ?? "python";
     return this.request("POST", "/api/execute", {
-      runtime: spec.runtime ?? "python",
-      code: spec.code,
+      runtime,
+      code: runtime === "python" ? spec.code : collapseStrippedTypes(spec.code),
       params: spec.params ?? {},
       inputs: spec.inputs ?? {},
       timeout_secs: spec.timeoutSecs ?? 120,

@@ -22,6 +22,12 @@
   - TS `task(id, handler)`: serialized via `Function.prototype.toString()` —
     document that closures don't survive. Raw source in another runtime goes
     through `task(id, {runtime, code})`.
+  - **Stripped-type gap collapse**: Node 22+ type stripping replaces
+    annotations with space runs, so `toString()` of a typed handler is full
+    of gaps. `collapseStrippedTypes` (index.ts) detects the artifact and
+    collapses it on every JS/TS code ingress (`task`, `createFunction`,
+    `execute`); strings/templates/comments/indentation stay verbatim and
+    clean code passes through byte-for-byte. Never apply it to Python.
 - **`stream_run`/`streamRun` attach-then-check**: open the SSE connection
   *first*, then check run state, returning immediately if terminal. This
   closes the fast-run race (run finishes before subscription). Don't

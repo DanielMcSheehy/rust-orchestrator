@@ -31,7 +31,10 @@ console.log(run.state); // "completed"
 
 Handlers are serialized with `Function.prototype.toString()` and executed in
 an isolated worker on the server, so they must be self-contained (no captured
-variables). To ship a task in another runtime, pass raw source instead:
+variables). Typed handlers are safe: the whitespace gaps Node 22+ leaves
+behind when it strips type annotations are collapsed before deploy, so the
+stored source stays readable. To ship a task in another runtime, pass raw
+source instead:
 
 ```ts
 const crunch = task("crunch", {
