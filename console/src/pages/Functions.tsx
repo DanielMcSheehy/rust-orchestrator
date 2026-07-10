@@ -28,6 +28,11 @@ export default function Functions() {
   const [invokeParams, setInvokeParams] = useState<Record<string, string>>({});
   const [results, setResults] = useState<Record<string, InvokeResult>>({});
   const [busy, setBusy] = useState<string | null>(null);
+  // Per-function edit draft — `editing` names the function whose code is open.
+  const [editing, setEditing] = useState<string | null>(null);
+  const [editCode, setEditCode] = useState("");
+  const [editRuntime, setEditRuntime] = useState<RuntimeName>("python");
+  const [editError, setEditError] = useState<string | null>(null);
 
   const refresh = useCallback(() => {
     api.get<CortexFunction[]>("/api/functions").then(setFunctions).catch(() => {});
@@ -65,6 +70,30 @@ export default function Functions() {
       }));
     } finally {
       setBusy(null);
+    }
+  };
+
+  const startEdit = (f: CortexFunction) => {
+    setEditing(f.spec.name);
+    setEditCode(f.spec.code);
+    setEditRuntime(f.spec.runtime);
+    setEditError(null);
+  };
+
+  const saveEdit = async (f: CortexFunction) => {
+    setEditError(null);
+    try {
+      // POST is an upsert on function name; keep the existing timeout.
+      await api.post("/api/functions", {
+        name: f.spec.name,
+        runtime: editRuntime,
+        code: editCode,
+        timeout_secs: f.spec.timeout_secs,
+      });
+      setEditing(null);
+      refresh();
+    } catch (e) {
+      setEditError((e as Error).message);
     }
   };
 
@@ -119,7 +148,7 @@ export default function Functions() {
             </div>
             <label className="field">
               <span>Handler code</span>
-              <CodeEditor value={code} language={runtime} minRows={8} onChange={setCode} />
+              <CodeEditor value={code} language={runtime} minRows={12} onChange={setCode} />
             </label>
           </div>
         </div>
@@ -144,7 +173,46 @@ export default function Functions() {
                 </span>
               </div>
               <div className="card-body">
-                <CodeBlock code={f.spec.code} language={f.spec.runtime} className="fn-code" />
+                {editing === f.spec.name ? (
+                  <div className="fn-edit">
+                    {editError && <div className="error-banner">{editError}</div>}
+                    <div className="fn-edit-bar">
+                      <select
+                        value={editRuntime}
+                        onChange={(e) => setEditRuntime(e.target.value as RuntimeName)}
+                      >
+                        <option value="python">python</option>
+                        <option value="typescript">typescript</option>
+                        <option value="javascript">javascript</option>
+                      </select>
+                      <span style={{ flex: 1 }} />
+                      <button className="btn sm" onClick={() => setEditing(null)}>
+                        Cancel
+                      </button>
+                      <button className="btn primary sm" onClick={() => saveEdit(f)}>
+                        Save
+                      </button>
+                    </div>
+                    <CodeEditor
+                      value={editCode}
+                      language={editRuntime}
+                      minRows={10}
+                      autoFocus
+                      onChange={setEditCode}
+                    />
+                  </div>
+                ) : (
+                  <div className="fn-code-wrap">
+                    <CodeBlock code={f.spec.code} language={f.spec.runtime} className="fn-code" />
+                    <button
+                      className="btn sm fn-edit-btn"
+                      title="Edit handler code"
+                      onClick={() => startEdit(f)}
+                    >
+                      ✎ Edit code
+                    </button>
+                  </div>
+                )}
                 <div className="form-row" style={{ alignItems: "flex-end" }}>
                   <label className="field" style={{ marginBottom: 0 }}>
                     <span>Params (JSON)</span>

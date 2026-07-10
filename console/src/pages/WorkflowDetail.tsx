@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, formatDuration, timeAgo, useEvents } from "../api";
 import DagGraph from "../components/DagGraph";
+import WorkflowBuilder from "../components/WorkflowBuilder";
 import { Empty, RuntimeBadge, StatusPill, Tile } from "../components/ui";
-import type { Run, TaskRun, Workflow } from "../types";
+import type { Run, TaskRun, Workflow, WorkflowSpec } from "../types";
 import { computeMetrics, formatMs, HistoryBars } from "./Workflows";
 
 /** Duration trend of recent runs, colored by outcome. */
@@ -99,6 +100,7 @@ export default function WorkflowDetail() {
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
   const [runs, setRuns] = useState<Run[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
   const navigate = useNavigate();
 
   const refresh = useCallback(() => {
@@ -127,6 +129,12 @@ export default function WorkflowDetail() {
       ? Math.round((metrics.completed / (metrics.completed + metrics.failed)) * 100)
       : null;
   const activeRuns = runs.filter((r) => r.state === "running" || r.state === "pending");
+
+  const save = async (spec: WorkflowSpec) => {
+    const wf = await api.put<Workflow>(`/api/workflows/${id}`, spec);
+    setWorkflow(wf);
+    setEditing(false);
+  };
 
   const trigger = async () => {
     setError(null);
@@ -170,6 +178,9 @@ export default function WorkflowDetail() {
           <button className="btn danger" onClick={remove}>
             Delete
           </button>
+          <button className="btn" onClick={() => setEditing((v) => !v)}>
+            {editing ? "Close editor" : "✎ Edit"}
+          </button>
           <button className="btn primary" onClick={trigger}>
             ▶ Trigger run
           </button>
@@ -177,6 +188,17 @@ export default function WorkflowDetail() {
       </div>
 
       {error && <div className="error-banner">{error}</div>}
+
+      {editing && (
+        <div className="card" style={{ marginBottom: 20 }}>
+          <div className="card-head">
+            <h2>Edit workflow</h2>
+          </div>
+          <div className="card-body">
+            <WorkflowBuilder initial={workflow.spec} submitLabel="Save" onSubmit={save} />
+          </div>
+        </div>
+      )}
 
       {activeRuns.map((r) => (
         <RunningProgress key={r.id} run={r} onClick={() => navigate(`/runs/${r.id}`)} />

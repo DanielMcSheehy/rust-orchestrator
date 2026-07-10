@@ -103,6 +103,8 @@ export type CellKind = "markdown" | "code" | "sql";
 export interface NotebookCell {
   id: string;
   kind: CellKind;
+  /** Optional user-facing name; cells below receive this cell's output as `inputs[name]`. */
+  name?: string;
   runtime?: RuntimeName;
   connector?: string;
   code: string;

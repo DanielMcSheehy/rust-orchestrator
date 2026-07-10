@@ -171,15 +171,23 @@ class CortexClient:
         code: str,
         runtime: str = "python",
         params: Optional[dict[str, Any]] = None,
+        inputs: Optional[dict[str, Any]] = None,
         timeout_secs: int = 120,
     ) -> dict[str, Any]:
         """Run a code snippet on the server's warm worker pool. The code must
-        define `handler(params, inputs)`. Returns
+        define `handler(params, inputs)`; ``inputs`` becomes the handler's
+        second argument. Returns
         ``{"ok", "result", "logs", "duration_ms"}`` (or ``"error"``/"trace")."""
         return self._request(
             "POST",
             "/api/execute",
-            {"runtime": runtime, "code": code, "params": params or {}, "timeout_secs": timeout_secs},
+            {
+                "runtime": runtime,
+                "code": code,
+                "params": params or {},
+                "inputs": inputs or {},
+                "timeout_secs": timeout_secs,
+            },
         )
 
     # ── live events ──────────────────────────────────────────────────────

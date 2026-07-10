@@ -224,7 +224,7 @@ data through datasets (<a href="#data">below</a>).</p>
 <tr><td>POST /api/functions/{name}/invoke</td><td>Invoke → <code>{ok, result, logs, duration_ms}</code>. <code>/invoke/stream</code> streams SSE <code>log</code> events then <code>result</code>/<code>error</code>.</td></tr>
 <tr><td>POST /api/ingest/{dataset}</td><td><b>Streaming</b> NDJSON ingestion — body consumed chunk-by-chunk, appended to the dataset file, counted, then <code>on_ingest</code> workflows fire. <code>GET /api/datasets</code> lists totals.</td></tr>
 <tr><td>POST /api/query</td><td><code>{"sql", "limit"?, "connector"?}</code> → <code>{rows, row_count, truncated, elapsed_ms}</code>. Default engine: embedded Polars; <code>connector</code> routes to Postgres/ClickHouse/chDB.</td></tr>
-<tr><td>POST /api/execute</td><td><code>{"runtime", "code", "params"?, "timeout_secs"?}</code> — run one snippet on the warm pool → result + logs, or <code>{ok:false, error, trace}</code>.</td></tr>
+<tr><td>POST /api/execute</td><td><code>{"runtime", "code", "params"?, "inputs"?, "timeout_secs"?}</code> — run one snippet on the warm pool → result + logs, or <code>{ok:false, error, trace}</code>. <code>inputs</code> becomes the handler's second argument.</td></tr>
 <tr><td>GET·POST /api/connectors</td><td>External engine registry; <code>DELETE /api/connectors/{name}</code>.</td></tr>
 <tr><td>GET·POST /api/notebooks</td><td>Notebook documents (cells stored as opaque JSON); <code>GET/PUT/DELETE /api/notebooks/{id}</code>.</td></tr>
 <tr><td>POST /mcp</td><td>Model Context Protocol endpoint — see <a href="#mcp">MCP</a>.</td></tr>
@@ -331,9 +331,12 @@ treat the data directory as sensitive.</div>
 <p>Observable-style executable documents in the console: <b>markdown</b> cells,
 <b>code</b> cells (Python/TS/JS, run on the warm pool via <code>/api/execute</code>), and
 <b>SQL</b> cells (Polars or any connector) — with a chart view (bar/line, x/y pickers) on any
-tabular result. Editors are CodeMirror 6: autocomplete, bracket matching, multi-cursor,
-<code>⌘⏎</code> to run. Cells and their outputs persist with the document, so notebooks reopen
-with results. Storage is schema-free JSON — the console owns the cell format.</p>
+tabular result. Cells <b>chain</b>: a cell's output reaches every cell below as
+<code>inputs.prev</code> (nearest output) and — for named cells — <code>inputs[name]</code>,
+so a Python cell can feed a JS cell can feed a chart. Editors are CodeMirror 6: autocomplete,
+bracket matching, multi-cursor, <code>⌘⏎</code> to run. Cells and their outputs persist with
+the document, so notebooks reopen with results. Storage is schema-free JSON — the console owns
+the cell format.</p>
 </section>
 
 <section id="isolation">

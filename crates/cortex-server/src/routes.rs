@@ -448,6 +448,10 @@ struct ExecuteBody {
     code: String,
     #[serde(default)]
     params: Value,
+    /// Optional upstream results passed as the handler's second argument —
+    /// notebook cells use this to chain outputs.
+    #[serde(default)]
+    inputs: Value,
     #[serde(default = "default_exec_timeout")]
     timeout_secs: u64,
 }
@@ -471,7 +475,7 @@ async fn execute(
                 runtime: body.runtime,
                 code: body.code,
                 params: body.params,
-                inputs: Value::Null,
+                inputs: body.inputs,
                 timeout_secs: body.timeout_secs.clamp(1, 600),
             },
             None,

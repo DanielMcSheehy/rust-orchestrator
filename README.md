@@ -33,10 +33,13 @@ the core.
   (`on_ingest: dataset` runs the workflow after every ingest batch).
 - **Direct execution API** — `POST /api/execute` runs any Python/TS/JS
   snippet on the warm worker pool and returns result + logs in ~1 ms
-  overhead. The building block for notebooks and agents.
+  overhead; optional `inputs` become the handler's second argument. The
+  building block for notebooks and agents.
 - **Notebooks** — Observable-style executable documents in the console:
   markdown, code cells (any runtime), SQL cells, and charts in between.
-  Cells run against the live platform and results persist with the document.
+  Cells run against the live platform, chain — each cell's output reaches
+  the cells below as `inputs.prev` / `inputs[name]` — and results persist
+  with the document.
 - **External engines** — register **Postgres**, **ClickHouse**, or **chDB**
   (embedded ClickHouse) connectors and point any query — API, SDK, notebook
   cell, console — at them with `{"connector": "name"}`.
@@ -190,7 +193,7 @@ the SDK READMEs for streaming, functions, and ingestion.
 | `GET /api/datasets` | Ingested datasets |
 | `POST /api/ingest/{dataset}` | **Streaming** NDJSON ingestion |
 | `POST /api/query` | SQL via embedded Polars, or `{"connector": name}` for Postgres/ClickHouse/chDB |
-| `POST /api/execute` | Run a Python/TS/JS snippet on the warm pool (`{"runtime", "code", "params"}`) |
+| `POST /api/execute` | Run a Python/TS/JS snippet on the warm pool (`{"runtime", "code", "params", "inputs"}`) |
 | `GET/POST /api/connectors`, `DELETE /api/connectors/{name}` | External engine registry |
 | `GET/POST /api/notebooks`, `GET/PUT/DELETE /api/notebooks/{id}` | Notebook documents |
 | `POST /mcp` | Model Context Protocol endpoint (13 tools for AI agents) |

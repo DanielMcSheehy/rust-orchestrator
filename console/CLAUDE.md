@@ -37,7 +37,13 @@ npm run build      # tsc -b && vite build — the build IS the typecheck
   dashes), `done` (hop completed), plain otherwise.
 - Notebook cells are client-owned JSON (`NotebookCell` in `types.ts`); the
   server stores them opaquely. Cell execution = `/api/execute` (code) or
-  `/api/query` (sql). Persist outputs with the document.
+  `/api/query` (sql). Code cells chain: `cellInputs()` collects outputs of
+  cells above (named cells keyed by name + `prev`) and sends them as
+  `inputs`. Persist outputs with the document.
+- `WorkflowBuilder.tsx` is the create/edit surface for workflows (Workflows
+  page + WorkflowDetail edit): structured form ↔ JSON tab over the same
+  `WorkflowSpec`; task cards address tasks by index so id edits don't
+  remount (and drop focus on) the card.
 
 ## Verification rule
 

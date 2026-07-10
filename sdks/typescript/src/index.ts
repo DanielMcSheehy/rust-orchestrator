@@ -322,18 +322,21 @@ export class CortexClient {
 
   /**
    * Run a code snippet on the server's warm worker pool. The code must
-   * define/export `handler(params, inputs)`.
+   * define/export `handler(params, inputs)`; `inputs` becomes the handler's
+   * second argument.
    */
   execute(spec: {
     code: string;
     runtime?: RuntimeName;
     params?: Record<string, Json>;
+    inputs?: Record<string, Json>;
     timeoutSecs?: number;
   }): Promise<{ ok: boolean; result?: Json; logs?: string[]; error?: string; duration_ms: number }> {
     return this.request("POST", "/api/execute", {
       runtime: spec.runtime ?? "python",
       code: spec.code,
       params: spec.params ?? {},
+      inputs: spec.inputs ?? {},
       timeout_secs: spec.timeoutSecs ?? 120,
     });
   }

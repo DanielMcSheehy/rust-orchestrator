@@ -15,10 +15,32 @@ import type {
 } from "../types";
 
 const CODE_TEMPLATE: Record<RuntimeName, string> = {
-  python: 'def handler(params, inputs):\n    return {"hello": "world"}\n',
-  typescript: "export function handler(params: any) {\n  return { hello: 'world' };\n}\n",
-  javascript: "export function handler(params) {\n  return { hello: 'world' };\n}\n",
+  python:
+    'def handler(params, inputs):\n    # inputs["prev"] = output of the cell above; named cells add inputs["<name>"]\n    return {"hello": "world"}\n',
+  typescript:
+    'export function handler(params: Record<string, unknown>, inputs: Record<string, unknown>) {\n  // inputs.prev = output of the cell above; named cells add inputs.<name>\n  return { hello: "world" };\n}\n',
+  javascript:
+    'export function handler(params, inputs) {\n  // inputs.prev = output of the cell above; named cells add inputs.<name>\n  return { hello: "world" };\n}\n',
 };
+
+/**
+ * Outputs of successfully-run cells above this one, as the handler's second
+ * argument: named cells keyed by name, plus `prev` = the nearest output.
+ */
+function cellInputs(prior: NotebookCell[]): Record<string, unknown> {
+  const inputs: Record<string, unknown> = {};
+  let prev: unknown;
+  for (const c of prior) {
+    if (c.kind === "markdown" || !c.output?.ok) continue;
+    const value = c.output.rows ?? c.output.result;
+    if (value === undefined) continue;
+    const name = c.name?.trim();
+    if (name) inputs[name] = value;
+    prev = value;
+  }
+  if (prev !== undefined) inputs.prev = prev;
+  return inputs;
+}
 
 let cellSeq = 0;
 const newCellId = () => `c${Date.now().toString(36)}-${cellSeq++}`;
@@ -90,7 +112,7 @@ export default function NotebookEditor() {
     update(next);
   };
 
-  const runCell = async (cell: NotebookCell): Promise<NotebookCell> => {
+  const runCell = async (cell: NotebookCell, prior: NotebookCell[]): Promise<NotebookCell> => {
     let output: CellOutput;
     try {
       if (cell.kind === "sql") {
@@ -103,6 +125,7 @@ export default function NotebookEditor() {
         const res = await api.post<CellOutput & { duration_ms: number }>("/api/execute", {
           runtime: cell.runtime ?? "python",
           code: cell.code,
+          inputs: cellInputs(prior),
         });
         output = res.ok
           ? { ok: true, result: res.result, logs: res.logs, elapsed_ms: res.duration_ms }
@@ -115,10 +138,11 @@ export default function NotebookEditor() {
   };
 
   const run = async (cellId: string) => {
-    const cell = cells.find((c) => c.id === cellId);
+    const idx = cells.findIndex((c) => c.id === cellId);
+    const cell = cells[idx];
     if (!cell || cell.kind === "markdown") return;
     setRunning((prev) => new Set(prev).add(cellId));
-    const done = await runCell(cell);
+    const done = await runCell(cell, cells.slice(0, idx));
     setRunning((prev) => {
       const next = new Set(prev);
       next.delete(cellId);
@@ -132,7 +156,7 @@ export default function NotebookEditor() {
     for (let i = 0; i < next.length; i++) {
       if (next[i].kind === "markdown") continue;
       setRunning((prev) => new Set(prev).add(next[i].id));
-      next[i] = await runCell(next[i]);
+      next[i] = await runCell(next[i], next.slice(0, i));
       setRunning((prev) => {
         const s = new Set(prev);
         s.delete(next[i].id);
@@ -169,9 +193,11 @@ export default function NotebookEditor() {
         </div>
       </div>
 
-      {cells.map((cell) => {
+      {cells.map((cell, cellIdx) => {
         const isRunning = running.has(cell.id);
         const isEditing = editing.has(cell.id) || cell.kind !== "markdown";
+        const availableInputs =
+          cell.kind === "code" ? Object.keys(cellInputs(cells.slice(0, cellIdx))) : [];
         return (
           <div className={`cell ${cell.kind}`} key={cell.id}>
             <div className="cell-gutter">
@@ -193,6 +219,15 @@ export default function NotebookEditor() {
             <div className="cell-main">
               <div className="cell-toolbar">
                 <span className="cell-kind">{cell.kind}</span>
+                {cell.kind !== "markdown" && (
+                  <input
+                    className="cell-name"
+                    placeholder="unnamed"
+                    title="Name this cell — cells below receive its output as inputs[name]"
+                    value={cell.name ?? ""}
+                    onChange={(e) => patchCell(cell.id, { name: e.target.value || undefined })}
+                  />
+                )}
                 {cell.kind === "code" && (
                   <select
                     value={cell.runtime ?? "python"}
@@ -224,6 +259,14 @@ export default function NotebookEditor() {
                       </option>
                     ))}
                   </select>
+                )}
+                {availableInputs.length > 0 && (
+                  <span
+                    className="cell-inputs"
+                    title="Outputs of cells above, passed as the handler's second argument"
+                  >
+                    inputs: {availableInputs.join(", ")}
+                  </span>
                 )}
                 {cell.output?.elapsed_ms !== undefined && (
                   <span className="muted">{cell.output.elapsed_ms}ms</span>
@@ -310,8 +353,8 @@ export default function NotebookEditor() {
           + markdown
         </button>
         <span className="muted" style={{ marginLeft: 8, fontSize: 12 }}>
-          ⌘⏎ runs a cell · code cells define <code>handler(params, inputs)</code> and can use{" "}
-          <code>cortex.query()</code> / <code>cortex.ingest()</code>
+          ⌘⏎ runs a cell · <code>handler(params, inputs)</code> — <code>inputs.prev</code> is the
+          cell above's output; name a cell to expose it as <code>inputs[name]</code>
         </span>
       </div>
       <div style={{ marginTop: 8 }}>

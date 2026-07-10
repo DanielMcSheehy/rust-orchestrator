@@ -1,30 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, formatDuration, timeAgo, useEvents } from "../api";
-import CodeEditor from "../components/CodeEditor";
+import WorkflowBuilder from "../components/WorkflowBuilder";
 import { Empty, RuntimeBadge, StatusPill } from "../components/ui";
 import type { Run, Workflow, WorkflowSpec } from "../types";
-
-const TEMPLATE = `{
-  "name": "my-pipeline",
-  "description": "Extract with Python, aggregate with TypeScript",
-  "params": { "n": 100 },
-  "tasks": [
-    {
-      "id": "extract",
-      "runtime": "python",
-      "code": "def handler(params, inputs):\\n    print('extracting', params['n'], 'rows')\\n    return {\\"values\\": list(range(params['n']))}\\n",
-      "depends_on": []
-    },
-    {
-      "id": "aggregate",
-      "runtime": "typescript",
-      "code": "export function handler(params: any, inputs: any) {\\n  const vs: number[] = inputs.extract.values;\\n  return { total: vs.reduce((a, b) => a + b, 0) };\\n}\\n",
-      "depends_on": ["extract"]
-    }
-  ],
-  "triggers": {}
-}`;
 
 export interface WorkflowMetrics {
   last?: Run;
@@ -79,8 +58,6 @@ export default function Workflows() {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [runs, setRuns] = useState<Run[]>([]);
   const [creating, setCreating] = useState(false);
-  const [draft, setDraft] = useState(TEMPLATE);
-  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const refresh = useCallback(() => {
@@ -112,22 +89,10 @@ export default function Workflows() {
     return out;
   }, [runs]);
 
-  const create = async () => {
-    setError(null);
-    let spec: WorkflowSpec;
-    try {
-      spec = JSON.parse(draft) as WorkflowSpec;
-    } catch (e) {
-      setError(`invalid JSON: ${(e as Error).message}`);
-      return;
-    }
-    try {
-      const wf = await api.post<Workflow>("/api/workflows", spec);
-      setCreating(false);
-      navigate(`/workflows/${wf.id}`);
-    } catch (e) {
-      setError((e as Error).message);
-    }
+  const create = async (spec: WorkflowSpec) => {
+    const wf = await api.post<Workflow>("/api/workflows", spec);
+    setCreating(false);
+    navigate(`/workflows/${wf.id}`);
   };
 
   return (
@@ -145,14 +110,10 @@ export default function Workflows() {
       {creating && (
         <div className="card" style={{ marginBottom: 20 }}>
           <div className="card-head">
-            <h2>Define workflow (JSON)</h2>
-            <button className="btn primary sm" onClick={create}>
-              Create
-            </button>
+            <h2>New workflow</h2>
           </div>
           <div className="card-body">
-            {error && <div className="error-banner">{error}</div>}
-            <CodeEditor value={draft} language="json" minRows={16} onChange={setDraft} />
+            <WorkflowBuilder submitLabel="Create" onSubmit={create} />
           </div>
         </div>
       )}
