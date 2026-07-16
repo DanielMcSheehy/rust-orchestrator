@@ -14,7 +14,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use chrono::Utc;
-use cortex_core::{Notebook, Runtime, WorkflowSpec};
+use cortex_core::{is_safe_name, Notebook, Runtime, WorkflowSpec};
 use cortex_executor::ExecRequest;
 use serde_json::{json, Value};
 use uuid::Uuid;
@@ -232,6 +232,9 @@ async fn dispatch(state: &SharedState, tool: &str, args: Value) -> Result<Value,
 
         "ingest" => {
             let dataset = args["dataset"].as_str().ok_or("missing dataset")?;
+            if !is_safe_name(dataset) {
+                return Err("dataset name must match [a-zA-Z0-9_-]{1,64}".to_string());
+            }
             let records = args["records"].as_array().ok_or("records must be an array")?;
             let dir = state.data_dir.join("datasets");
             tokio::fs::create_dir_all(&dir).await.map_err(|e| err(&e))?;
@@ -360,6 +363,11 @@ async fn dispatch(state: &SharedState, tool: &str, args: Value) -> Result<Value,
         }
 
         "create_function" => {
+            if let Some(name) = args["name"].as_str() {
+                if !is_safe_name(name) {
+                    return Err("function name must match [a-zA-Z0-9_-]{1,64}".to_string());
+                }
+            }
             let spec: cortex_core::FunctionSpec = serde_json::from_value(json!({
                 "name": args["name"],
                 "runtime": args["runtime"],
