@@ -1549,6 +1549,11 @@ textarea.cell-editor {
 
 /* ── function code editing ──────────────────────────────────────────── */
 
+.editor-wrap {
+  width: 100%;
+  min-width: 0;
+}
+
 .fn-code-wrap {
   position: relative;
 }

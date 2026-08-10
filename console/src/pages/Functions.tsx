@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, timeAgo } from "../api";
-import { CodeBlock } from "../components/CodeBlock";
+import CodeEditor, { CodeBlock } from "../components/CodeEditor";
 import { Empty, RuntimeBadge } from "../components/ui";
 import type { CortexFunction, RuntimeName } from "../types";
 
@@ -148,14 +148,9 @@ export default function Functions() {
             </div>
             <label className="field">
               <span>Handler code</span>
-              <textarea
-                className="result-json"
-                style={{ minHeight: 240, whiteSpace: "pre", overflow: "auto", width: "100%", fontFamily: "var(--mono)", fontSize: "12.5px", lineHeight: "1.6", tabSize: 4 } as React.CSSProperties}
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                spellCheck={false}
-                autoComplete="off"
-              />
+              <div className="editor-wrap">
+                <CodeEditor value={code} language={runtime} minRows={12} onChange={setCode} />
+              </div>
             </label>
           </div>
         </div>
@@ -200,14 +195,15 @@ export default function Functions() {
                         Save
                       </button>
                     </div>
-                    <textarea
-                      className="result-json"
-                      style={{ minHeight: 200, whiteSpace: "pre", overflow: "auto", width: "100%", fontFamily: "var(--mono)", fontSize: "12.5px", lineHeight: "1.6", tabSize: 4 } as React.CSSProperties}
-                      value={editCode}
-                      onChange={(e) => setEditCode(e.target.value)}
-                      autoFocus
-                      spellCheck={false}
-                    />
+                    <div className="editor-wrap">
+                      <CodeEditor
+                        value={editCode}
+                        language={editRuntime}
+                        minRows={10}
+                        autoFocus
+                        onChange={setEditCode}
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div className="fn-code-wrap">
