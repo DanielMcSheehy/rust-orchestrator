@@ -1,5 +1,5 @@
 # ── build the console ────────────────────────────────────────────────────
-FROM node:22-slim AS console
+FROM node:22-bookworm-slim AS console
 WORKDIR /build
 COPY console/package.json console/package-lock.json* ./
 RUN npm install --no-audit --no-fund
@@ -7,14 +7,18 @@ COPY console/ ./
 RUN npm run build
 
 # ── build the server ─────────────────────────────────────────────────────
-FROM rust:1-slim AS server
+# Pinned to bookworm to match the runtime (glibc 2.36). Floating `*-slim`
+# tags drifted: rust:1-slim moved to trixie (glibc 2.41) while
+# node:22-slim is still bookworm (2.36), producing
+# `GLIBC_2.39 not found` at startup.
+FROM rust:1-bookworm AS server
 WORKDIR /build
 COPY Cargo.toml Cargo.lock ./
 COPY crates/ crates/
 RUN cargo build --release -p cortex-server
 
 # ── runtime: rust binary + python + node workers ─────────────────────────
-FROM node:22-slim
+FROM node:22-bookworm-slim
 RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 ca-certificates curl \
   && rm -rf /var/lib/apt/lists/*
