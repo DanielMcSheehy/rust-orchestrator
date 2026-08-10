@@ -18,7 +18,11 @@ services:
     restart: unless-stopped
     environment:
       # Coolify replaces this with the resource's FQDN and routes it to :7420.
-      - SERVICE_FQDN_CORTEX_7420
+      # Use SERVICE_FQDN_CORTEX (service name) — Coolify auto-routes the single
+      # exposed port. The _7420 suffix variant (SERVICE_FQDN_<svc>_<port>) is
+      # only needed for multi-port services and confuses older Coolify parsers
+      # (they look for service `cortex_7420` → 404 on the generated sslip.io).
+      - SERVICE_FQDN_CORTEX
       - RUST_LOG=info
       - CORTEX_PORT=7420
       - CORTEX_DATA_DIR=/data
