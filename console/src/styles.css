@@ -624,7 +624,7 @@ label.field {
   margin-bottom: 14px;
 }
 
-label.field span {
+label.field > span {
   display: block;
   font-size: 12px;
   font-weight: 550;
