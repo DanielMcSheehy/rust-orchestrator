@@ -57,6 +57,8 @@ const cortexTheme = EditorView.theme(
       color: "var(--ink-2)",
       fontSize: "12.5px",
       borderRadius: "var(--radius-sm)",
+      width: "100%",
+      minWidth: "0",
     },
     "&.cm-focused": { outline: "none" },
     ".cm-scroller": {
@@ -221,7 +223,6 @@ export default function CodeEditor({
         languageExtension(language),
         cortexTheme,
         syntaxHighlighting(cortexHighlight),
-        EditorView.lineWrapping,
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             callbacks.current.onChange(update.state.doc.toString());

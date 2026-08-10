@@ -1203,6 +1203,18 @@ textarea.cell-editor {
   overflow: hidden;
   background: var(--page);
   transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  width: 100%;
+  min-width: 0;
+  display: block;
+}
+
+.cm-host .cm-editor {
+  min-width: 0;
+  width: 100%;
+}
+
+.cm-host .cm-scroller {
+  overflow: auto;
 }
 
 .cm-host:focus-within {
