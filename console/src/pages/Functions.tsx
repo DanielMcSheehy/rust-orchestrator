@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, timeAgo } from "../api";
-import CodeEditor, { CodeBlock } from "../components/CodeEditor";
+import { CodeBlock } from "../components/CodeBlock";
 import { Empty, RuntimeBadge } from "../components/ui";
 import type { CortexFunction, RuntimeName } from "../types";
 
@@ -148,7 +148,14 @@ export default function Functions() {
             </div>
             <label className="field">
               <span>Handler code</span>
-              <CodeEditor value={code} language={runtime} minRows={12} onChange={setCode} />
+              <textarea
+                className="result-json"
+                style={{ minHeight: 240, whiteSpace: "pre", overflow: "auto", width: "100%", fontFamily: "var(--mono)", fontSize: "12.5px", lineHeight: "1.6", tabSize: 4 } as React.CSSProperties}
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                spellCheck={false}
+                autoComplete="off"
+              />
             </label>
           </div>
         </div>
@@ -193,12 +200,13 @@ export default function Functions() {
                         Save
                       </button>
                     </div>
-                    <CodeEditor
+                    <textarea
+                      className="result-json"
+                      style={{ minHeight: 200, whiteSpace: "pre", overflow: "auto", width: "100%", fontFamily: "var(--mono)", fontSize: "12.5px", lineHeight: "1.6", tabSize: 4 } as React.CSSProperties}
                       value={editCode}
-                      language={editRuntime}
-                      minRows={10}
+                      onChange={(e) => setEditCode(e.target.value)}
                       autoFocus
-                      onChange={setEditCode}
+                      spellCheck={false}
                     />
                   </div>
                 ) : (

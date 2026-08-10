@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, formatBytes, timeAgo, useEvents } from "../api";
-import CodeEditor from "../components/CodeEditor";
 import ResultView from "../components/ResultView";
 import { Empty } from "../components/ui";
 import type { Connector, ConnectorKind, Dataset } from "../types";
@@ -63,7 +62,14 @@ function QueryPanel({ datasets, connectors }: { datasets: Dataset[]; connectors:
         </div>
       </div>
       <div className="card-body">
-        <CodeEditor value={sql} language="sql" minRows={3} onChange={setSql} onRun={run} />
+        <textarea
+          className="result-json"
+          style={{ minHeight: 60, whiteSpace: "pre", overflow: "auto", width: "100%", fontFamily: "var(--mono)", fontSize: "12.5px", lineHeight: "1.6", tabSize: 4 } as React.CSSProperties}
+          value={sql}
+          onChange={(e) => setSql(e.target.value)}
+          onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") run(); }}
+          spellCheck={false}
+        />
         {error && (
           <div className="error-banner" style={{ marginTop: 12, marginBottom: 0 }}>
             {error}
@@ -263,7 +269,13 @@ export default function Ingestion() {
           {!file && (
             <label className="field">
               <span>Records (one JSON object per line)</span>
-              <CodeEditor value={payload} language="json" minRows={6} onChange={setPayload} />
+              <textarea
+                className="result-json"
+                style={{ minHeight: 120, whiteSpace: "pre", overflow: "auto", width: "100%", fontFamily: "var(--mono)", fontSize: "12.5px", lineHeight: "1.6", tabSize: 4 } as React.CSSProperties}
+                value={payload}
+                onChange={(e) => setPayload(e.target.value)}
+                spellCheck={false}
+              />
             </label>
           )}
           {file && (
