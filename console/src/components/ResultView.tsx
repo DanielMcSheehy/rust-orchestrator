@@ -37,7 +37,15 @@ export default function ResultView({
   };
 
   if (!rows) {
-    return <CodeBlock code={JSON.stringify(value, null, 2)} language="json" />;
+    const json = JSON.stringify(value, null, 2);
+    const truncated = json.length > 4000;
+    const display = truncated ? json.slice(0, 4000) + "\n\n… truncated " + (json.length - 4000) + " chars" : json;
+    return (
+      <>
+        <CodeBlock code={display} language="json" />
+        {truncated && <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>Showing first 4000 chars — truncated.</p>}
+      </>
+    );
   }
 
   return (
@@ -101,7 +109,7 @@ export default function ResultView({
               </tr>
             </thead>
             <tbody>
-              {rows.slice(0, 200).map((row, i) => (
+              {rows.slice(0, 25).map((row, i) => (
                 <tr key={i}>
                   {columns.map((c) => (
                     <td key={c} className="mono">
@@ -112,6 +120,11 @@ export default function ResultView({
               ))}
             </tbody>
           </table>
+          {rows.length > 25 && (
+            <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+              Showing 25 of {rows.length} rows — truncated. Use LIMIT.
+            </p>
+          )}
         </div>
       )}
     </div>
