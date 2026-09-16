@@ -1,7 +1,7 @@
 """Flow and task definition primitives.
 
 A ``@task``-decorated function is shipped to the server as source code and
-executed inside a Cortex Python worker, so it must be self-contained: do its
+executed inside a Loom Python worker, so it must be self-contained: do its
 imports inside the function body and take ``(params, inputs)`` as arguments.
 """
 
@@ -69,7 +69,7 @@ def task(
     timeout_secs: int = 300,
     retries: int = 0,
 ):
-    """Declare a Cortex task from a Python function.
+    """Declare a Loom task from a Python function.
 
     Usable bare (``@task``) or configured
     (``@task(depends_on=[other], retries=2)``). The decorated function keeps

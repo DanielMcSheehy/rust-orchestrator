@@ -1,4 +1,4 @@
-# Cortex architecture
+# Loom architecture
 
 ## Design goals
 
@@ -127,7 +127,7 @@ Rust dataframe engine — and exposes it everywhere (`cortex-server/src/data.rs`
 external sources: **Postgres** (native protocol, per-type JSON conversion),
 **ClickHouse** (HTTP interface, `FORMAT JSONEachRow`), and **chDB**
 (embedded ClickHouse executed *inside the Python worker runtime* — reusing
-Cortex's own execution engine instead of linking libchdb into the server;
+Loom's own execution engine instead of linking libchdb into the server;
 requires `pip install chdb` in the worker environment). Connector URLs are
 stored in SQLite as plaintext — treat the store as sensitive.
 

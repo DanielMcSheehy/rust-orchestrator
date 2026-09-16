@@ -1,4 +1,4 @@
-# Rust Orchestrator
+# Loom
 
 **A Rust-native orchestration platform for Python and TypeScript workloads** —
 workflow DAGs, serverless functions, streaming NDJSON ingestion, embedded SQL
@@ -7,7 +7,7 @@ binary, SQLite inside. No broker, no external database, no YAML.
 
 [![CI](https://github.com/DanielMcSheehy/rust-orchestrator/actions/workflows/ci.yml/badge.svg)](https://github.com/DanielMcSheehy/rust-orchestrator/actions/workflows/ci.yml)
 
-![Cortex console — live dashboard](docs/screenshots/dashboard.png)
+![Loom console — live dashboard](docs/screenshots/dashboard.png)
 
 ## What it does
 
@@ -47,7 +47,7 @@ binary, SQLite inside. No broker, no external database, no YAML.
 - **MCP server** — `POST /mcp` speaks the Model Context Protocol
   (streamable HTTP), exposing 13 tools (create/trigger workflows, execute
   code, SQL, ingest, functions, notebooks) so AI agents can drive the whole
-  platform: `claude mcp add --transport http cortex http://localhost:7420/mcp`.
+  platform: `claude mcp add --transport http loom http://localhost:7420/mcp`.
 - **SDKs** — [Python](sdks/python) (`@task` decorators, zero deps) and
   [TypeScript](sdks/typescript) (`task()`/`flow()` builders, zero deps).
 - **Console** — a dark, real-time React UI: DAG viewer, run Gantt timeline,

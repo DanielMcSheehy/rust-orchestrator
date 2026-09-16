@@ -1,6 +1,6 @@
 # Development environment
 
-Everything needed to hack on Cortex locally, and how the rebuild loop works.
+Everything needed to hack on Loom locally, and how the rebuild loop works.
 
 ## Prerequisites
 
@@ -23,7 +23,7 @@ the server creates under `CORTEX_DATA_DIR` (default `./data`).
 ## First run
 
 ```bash
-git clone https://github.com/FormantIO/cortex && cd cortex
+git clone https://github.com/DanielMcSheehy/rust-orchestrator && cd rust-orchestrator
 
 # 1. backend: build + run the server (API on :7420)
 cargo run -p cortex-server                 # dev profile is fine for hacking

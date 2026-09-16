@@ -1,4 +1,4 @@
-"""In-task Cortex platform bindings (Python).
+"""In-task Loom platform bindings (Python).
 
 Available to every task and function as `import cortex` — the worker shim
 puts this module on `sys.path`. Local API calls deliberately bypass any

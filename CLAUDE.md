@@ -1,4 +1,4 @@
-# Cortex — agent guide
+# Loom — agent guide
 
 Rust-native orchestration platform for Python/TypeScript workloads: workflow
 DAGs, serverless functions, streaming NDJSON ingestion, embedded SQL (Polars),

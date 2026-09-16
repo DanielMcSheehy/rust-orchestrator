@@ -223,7 +223,7 @@ export default function Functions() {
                     <input
                       type="text"
                       className="mono"
-                      placeholder='{"name": "cortex"}'
+                      placeholder='{"name": "loom"}'
                       value={invokeParams[f.spec.name] ?? ""}
                       onChange={(e) =>
                         setInvokeParams((prev) => ({ ...prev, [f.spec.name]: e.target.value }))

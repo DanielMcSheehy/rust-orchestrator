@@ -1,4 +1,4 @@
-// Cortex Node worker shim.
+// Loom Node worker shim.
 //
 // Reads JSON job requests from stdin, one per line:
 //   {"entry": "/path/to/job.mjs", "params": {...}, "inputs": {...}}

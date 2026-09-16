@@ -1,4 +1,4 @@
-"""Cortex Python worker shim.
+"""Loom Python worker shim.
 
 Reads JSON job requests from stdin, one per line:
     {"entry": "/path/to/job.py", "params": {...}, "inputs": {...}}

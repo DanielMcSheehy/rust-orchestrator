@@ -61,7 +61,7 @@ export default function App() {
             <circle cx="16" cy="16" r="13" fill="none" stroke="#6d8dff" strokeWidth="3" />
             <circle cx="16" cy="16" r="5" fill="#6d8dff" />
           </svg>
-          Cortex
+          Loom
           <small>v0.1</small>
         </div>
         <NavLink to="/" end className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}>

@@ -1,4 +1,4 @@
-//! MCP (Model Context Protocol) server — makes Cortex a first-class tool
+//! MCP (Model Context Protocol) server — makes Loom a first-class tool
 //! surface for AI agents.
 //!
 //! Implements the streamable-HTTP transport at `POST /mcp`: each request is
@@ -6,7 +6,7 @@
 //! a stateless server). Supported methods: `initialize`, `ping`,
 //! `tools/list`, `tools/call`, plus notification acknowledgement.
 //!
-//! Register it with e.g. `claude mcp add --transport http cortex
+//! Register it with e.g. `claude mcp add --transport http loom
 //! http://localhost:7420/mcp`.
 
 use axum::extract::State;
@@ -38,8 +38,8 @@ pub async fn handle(State(state): State<SharedState>, Json(msg): Json<Value>) ->
         "initialize" => Ok(json!({
             "protocolVersion": PROTOCOL_VERSION,
             "capabilities": { "tools": {} },
-            "serverInfo": { "name": "cortex", "version": env!("CARGO_PKG_VERSION") },
-            "instructions": "Cortex is a workflow orchestration platform. Define DAGs of \
+            "serverInfo": { "name": "loom", "version": env!("CARGO_PKG_VERSION") },
+            "instructions": "Loom is a workflow orchestration platform. Define DAGs of \
                 Python/TypeScript tasks, trigger runs, execute code directly, run SQL over \
                 ingested datasets (embedded Polars) or external connectors, ingest NDJSON \
                 data, and manage serverless functions."
@@ -74,7 +74,7 @@ fn tool(name: &str, description: &str, properties: Value, required: &[&str]) -> 
 
 fn tool_definitions() -> Vec<Value> {
     vec![
-        tool("cortex_stats", "Platform counters: workflows, runs, functions, datasets, ingested volume.", json!({}), &[]),
+        tool("loom_stats", "Platform counters: workflows, runs, functions, datasets, ingested volume.", json!({}), &[]),
         tool(
             "execute_code",
             "Run a code snippet on the warm worker pool and get its result + logs. The code must define `handler(params, inputs)` (Python) or export it (JS/TS).",
@@ -177,7 +177,7 @@ async fn call_tool(state: &SharedState, params: &Value) -> Result<Value, String>
 async fn dispatch(state: &SharedState, tool: &str, args: Value) -> Result<Value, String> {
     let err = |e: &dyn std::fmt::Display| e.to_string();
     match tool {
-        "cortex_stats" => serde_json::to_value(state.store.stats().map_err(|e| err(&e))?)
+        "loom_stats" => serde_json::to_value(state.store.stats().map_err(|e| err(&e))?)
             .map_err(|e| err(&e)),
 
         "execute_code" => {

@@ -7,7 +7,7 @@
 //!   `FORMAT JSONEachRow` appended unless the query already names a format
 //! - **chdb** — embedded ClickHouse, executed *inside the Python worker
 //!   runtime* (requires `pip install chdb` in the worker environment). This
-//!   reuses Cortex's own execution engine instead of linking libchdb into
+//!   reuses Loom's own execution engine instead of linking libchdb into
 //!   the server binary.
 
 use cortex_core::{Connector, ConnectorKind, Runtime};

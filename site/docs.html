@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cortex Docs — concepts, API, SDKs, deployment</title>
-<meta name="description" content="Everything Cortex: workflows, tasks, runs, the HTTP API, SDKs, in-task bindings, SQL engine, notebooks, MCP, isolation tiers, and deployment.">
+<title>Loom Docs — concepts, API, SDKs, deployment</title>
+<meta name="description" content="Everything Loom: workflows, tasks, runs, the HTTP API, SDKs, in-task bindings, SQL engine, notebooks, MCP, isolation tiers, and deployment.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%236d8dff' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%236d8dff'/%3E%3C/svg%3E">
 <style>
 :root{
@@ -86,8 +86,8 @@ td:first-child{white-space:nowrap;font-family:var(--mono);font-size:12.5px;color
 <div class="layout">
 
 <aside>
-  <span class="brand"><svg width="20" height="20" viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="none" stroke="#6d8dff" stroke-width="3"/><circle cx="16" cy="16" r="5" fill="#22d3ee"/></svg>Cortex Docs</span>
-  <a class="back" href="./index.html">← back to cortex.dev</a>
+  <span class="brand"><svg width="20" height="20" viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="none" stroke="#6d8dff" stroke-width="3"/><circle cx="16" cy="16" r="5" fill="#22d3ee"/></svg>Loom Docs</span>
+  <a class="back" href="./index.html">← back to Loom</a>
   <nav id="toc">
     <div class="group">Start</div>
     <a href="#overview">Overview</a>
@@ -114,14 +114,14 @@ td:first-child{white-space:nowrap;font-family:var(--mono);font-size:12.5px;color
 </aside>
 
 <main>
-<h1>Cortex <span class="g">documentation</span></h1>
+<h1>Loom <span class="g">documentation</span></h1>
 <p class="lead">Everything in one place: the execution model, the HTTP surface, both SDKs,
 the data engine, and how to run it. All benchmark numbers here were measured on a modest
 dev container with the release build — reproduce them from the repo.</p>
 
 <section id="overview">
 <h2>Overview</h2>
-<p>Cortex is a <b>Rust-native orchestration platform</b> for Python and TypeScript workloads.
+<p>Loom is a <b>Rust-native orchestration platform</b> for Python and TypeScript workloads.
 One 67&nbsp;MB binary contains the scheduler, a parallel DAG orchestrator, a warm worker pool,
 streaming NDJSON ingestion, an embedded SQL engine (Polars), serverless functions, notebooks,
 an SSE event bus, and an MCP server for AI agents. State lives in a single SQLite (WAL) file.</p>
@@ -138,7 +138,7 @@ Keep deployments internal or front them with your proxy's access controls.</div>
 <section id="quickstart">
 <h2>Quickstart</h2>
 <pre><span class="c"># run everything (console + API on :7420)</span>
-git clone https://github.com/FormantIO/cortex &amp;&amp; cd cortex
+git clone https://github.com/DanielMcSheehy/rust-orchestrator &amp;&amp; cd rust-orchestrator
 docker compose up --build
 
 <span class="c"># or natively: Rust 1.80+, Python 3.10+, Node 20+ (22+ for TS tasks)</span>
@@ -285,16 +285,16 @@ in the worker environment:</p>
 
 <section id="mcp">
 <h2>MCP — the agent surface</h2>
-<pre>claude mcp add --transport http cortex http://localhost:7420/mcp</pre>
+<pre>claude mcp add --transport http loom http://localhost:7420/mcp</pre>
 <p>The built-in Model Context Protocol server (streamable HTTP, stateless JSON-RPC) exposes
-<b>13 tools</b>: <code>cortex_stats</code>, <code>execute_code</code>, <code>query</code>,
+<b>13 tools</b>: <code>loom_stats</code>, <code>execute_code</code>, <code>query</code>,
 <code>ingest</code>, <code>list_datasets</code>, <code>list_workflows</code>,
 <code>create_workflow</code>, <code>trigger_workflow</code>, <code>get_run</code>,
 <code>list_runs</code>, <code>invoke_function</code>, <code>create_function</code>,
 <code>create_notebook</code>.</p>
 <p>Because workflows are plain JSON and the server returns structured validation errors, an
 agent can loop: <i>write code → create_workflow → trigger → read failure trace → patch →
-re-trigger</i> — a self-correcting pipeline builder with Cortex as the execution substrate.</p>
+re-trigger</i> — a self-correcting pipeline builder with Loom as the execution substrate.</p>
 </section>
 
 <section id="data">

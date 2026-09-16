@@ -1,8 +1,8 @@
 /**
- * Cortex TypeScript SDK.
+ * Loom TypeScript SDK.
  *
  * Define tasks as plain functions, wire them into a flow, deploy against a
- * Cortex server, and stream live run events. Zero runtime dependencies —
+ * Loom server, and stream live run events. Zero runtime dependencies —
  * built on `fetch`.
  *
  * ```ts

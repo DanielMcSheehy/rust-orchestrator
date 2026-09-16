@@ -1,6 +1,6 @@
 # cortex-sdk (Python)
 
-Python bindings for [Cortex](../../README.md). Zero dependencies — everything
+Python bindings for [Loom](../../README.md). Zero dependencies — everything
 runs on the standard library.
 
 ```bash

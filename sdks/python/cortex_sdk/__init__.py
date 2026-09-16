@@ -1,7 +1,7 @@
-"""Cortex Python SDK.
+"""Loom Python SDK.
 
 Define tasks as plain Python functions, wire them into a flow, deploy the
-flow to a Cortex server, and stream live run events — no dependencies
+flow to a Loom server, and stream live run events — no dependencies
 beyond the standard library.
 
     from cortex_sdk import CortexClient, Flow, task

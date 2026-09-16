@@ -1,4 +1,4 @@
-// In-task Cortex platform bindings (JavaScript/TypeScript).
+// In-task Loom platform bindings (JavaScript/TypeScript).
 //
 // Available to every task and function as the global `cortex` — the worker
 // shim installs it before importing job code.

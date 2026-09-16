@@ -1,4 +1,4 @@
-//! cortex-core — the domain model shared by every Cortex crate.
+//! cortex-core — the domain model shared by every Loom crate.
 //!
 //! Nothing in here does I/O. Workflows, tasks, runs, events, and the DAG
 //! algebra live in this crate so the store, executor, and server all agree

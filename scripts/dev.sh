@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the Cortex server and the console dev server side by side.
+# Run the Loom server and the console dev server side by side.
 #   ./scripts/dev.sh
 # Server: http://localhost:7420   Console (hot reload): http://localhost:3001
 set -euo pipefail

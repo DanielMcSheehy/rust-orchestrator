@@ -1,4 +1,4 @@
-"""HTTP client for the Cortex server. Standard library only."""
+"""HTTP client for the Loom server. Standard library only."""
 
 from __future__ import annotations
 

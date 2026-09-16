@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "cortex-sdk"
 version = "0.1.0"
-description = "Python bindings for the Cortex orchestration platform: define flows and tasks in Python, deploy and stream them against a Cortex server"
+description = "Python bindings for the Loom orchestration platform: define flows and tasks in Python, deploy and stream them against a Loom server"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }

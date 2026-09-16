@@ -1,6 +1,6 @@
 # @cortex/sdk (TypeScript)
 
-TypeScript/JavaScript bindings for [Cortex](../../README.md). Zero runtime
+TypeScript/JavaScript bindings for [Loom](../../README.md). Zero runtime
 dependencies — built on `fetch` (Node 20+, Bun, Deno, browsers).
 
 ```bash

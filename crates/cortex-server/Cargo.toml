@@ -1,6 +1,6 @@
 [package]
 name = "cortex-server"
-description = "Cortex control plane: REST + SSE API, DAG orchestrator, scheduler, ingestion, serverless functions"
+description = "Loom control plane: REST + SSE API, DAG orchestrator, scheduler, ingestion, serverless functions"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
