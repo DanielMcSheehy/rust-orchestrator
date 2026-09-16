@@ -7,7 +7,7 @@ binary, SQLite inside. No broker, no external database, no YAML.
 
 [![CI](https://github.com/DanielMcSheehy/rust-orchestrator/actions/workflows/ci.yml/badge.svg)](https://github.com/DanielMcSheehy/rust-orchestrator/actions/workflows/ci.yml)
 
-![Loom console — live dashboard](docs/screenshots/dashboard.png)
+![Loom — orchestrate Python & TypeScript at Rust speed](docs/screenshots/landing-hero.png)
 
 ## What it does
 
@@ -57,6 +57,8 @@ binary, SQLite inside. No broker, no external database, no YAML.
 ## The console
 
 Every screenshot below is the real UI, served by the binary itself.
+
+![Loom console — live dashboard](docs/screenshots/dashboard.png)
 
 | Orchestrate | Observe |
 | --- | --- |
