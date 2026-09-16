@@ -1,12 +1,13 @@
 # Rust Orchestrator
 
 **A Rust-native orchestration platform for Python and TypeScript workloads** —
-workflow DAGs, streaming data ingestion, serverless functions, and a live
-console. Think Prefect/Airflow ergonomics with a single static Rust binary at
-the core.
+workflow DAGs, serverless functions, streaming NDJSON ingestion, embedded SQL
+(Polars), executable notebooks, and an MCP server for AI agents. One static
+binary, SQLite inside. No broker, no external database, no YAML.
 
-<img width="1360" height="842" alt="Screenshot 2026-07-07 at 6 35 28 AM" src="https://github.com/user-attachments/assets/80de6315-cbd3-42f9-afe5-7d1b23515330" />
+[![CI](https://github.com/DanielMcSheehy/rust-orchestrator/actions/workflows/ci.yml/badge.svg)](https://github.com/DanielMcSheehy/rust-orchestrator/actions/workflows/ci.yml)
 
+![Cortex console — live dashboard](docs/screenshots/dashboard.png)
 
 ## What it does
 
@@ -53,43 +54,23 @@ the core.
   live logs, 24h activity chart, notebooks, function playground, data
   manager with SQL editor.
 
-![Notebook](docs/screenshots/notebook.png)
+## The console
 
-| Workflow DAG | Live run |
+Every screenshot below is the real UI, served by the binary itself.
+
+| Orchestrate | Observe |
 | --- | --- |
-| ![Workflow DAG](docs/screenshots/workflow-dag.png) | ![Run detail](docs/screenshots/run-detail.png) |
+| ![Workflow DAG with duration trend](docs/screenshots/workflow-dag.png) | ![Run detail — task graph + Gantt timeline](docs/screenshots/run-detail.png) |
 
-![SQL over datasets](docs/screenshots/data-query.png)
+| Query | Invoke |
+| --- | --- |
+| ![SQL over ingested datasets](docs/screenshots/data-query.png) | ![Serverless function playground](docs/screenshots/functions.png) |
+
+![Executable notebook — markdown, SQL, and charts](docs/screenshots/notebook.png)
 
 ## Architecture
 
-```
-┌────────────────────────── console (React + Vite) ──────────────────────────┐
-│   Dashboard · Workflows/DAG · Runs (live SSE) · Functions · Ingestion      │
-└──────────────────────────────────┬──────────────────────────────────────────┘
-                                   │ REST + SSE
-┌──────────────────────────────────▼──────────────────────────────────────────┐
-│                        cortex-server (Rust, axum)                           │
-│  ┌────────────┐  ┌───────────┐  ┌───────────┐  ┌───────────────────────┐   │
-│  │ REST + SSE │  │ scheduler │  │ ingestion │  │ serverless functions  │   │
-│  └─────┬──────┘  └─────┬─────┘  └─────┬─────┘  └───────────┬───────────┘   │
-│        └───────────────┴──── orchestrator (DAG, retries) ──┘               │
-└────────┬─────────────────────────────┬─────────────────────────────────────┘
-         │                             │
-┌────────▼─────────┐        ┌──────────▼──────────────────────────────────────┐
-│   cortex-store   │        │              cortex-executor                    │
-│ (SQLite, WAL)    │        │  worker processes, JSON-lines over stdio        │
-└──────────────────┘        │  ┌─────────────┐  ┌───────────────────────────┐ │
-                            │  │ python3     │  │ node (TS type-stripping)  │ │
-                            │  │ worker.py   │  │ worker.mjs                │ │
-                            │  └─────────────┘  └───────────────────────────┘ │
-                            └─────────────────────────────────────────────────┘
-       ▲                                      ▲
-┌──────┴────────┐                     ┌───────┴────────┐
-│  cortex-sdk   │                     │  @cortex/sdk   │
-│  (Python)     │                     │  (TypeScript)  │
-└───────────────┘                     └────────────────┘
-```
+![Architecture — clients, cortex-server, executor, store](docs/screenshots/architecture.png)
 
 Crates:
 
