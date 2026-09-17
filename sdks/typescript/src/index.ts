@@ -6,7 +6,7 @@
  * built on `fetch`.
  *
  * ```ts
- * import { CortexClient, flow, task } from "@cortex/sdk";
+ * import { LoomClient, flow, task } from "@loom/sdk";
  *
  * const extract = task("extract", async (params) => ({
  *   values: Array.from({ length: params.n as number }, (_, i) => i),
@@ -18,7 +18,7 @@
  *   { dependsOn: [extract] },
  * );
  *
- * const client = new CortexClient("http://localhost:7420");
+ * const client = new LoomClient("http://localhost:7420");
  * const wf = await client.deploy(flow("sum-pipeline", [extract, total], { params: { n: 100 } }));
  * const run = await client.trigger(wf.id, { wait: true });
  * ```
@@ -98,7 +98,7 @@ export interface TaskRun {
   finished_at?: string | null;
 }
 
-export interface CortexEvent {
+export interface LoomEvent {
   type: "run_updated" | "task_updated" | "log" | "ingested" | "function_invoked";
   ts: string;
   [key: string]: Json | undefined;
@@ -275,7 +275,7 @@ export function flow(name: string, tasks: TaskSpec[], options: FlowOptions = {})
   };
 }
 
-export class CortexError extends Error {
+export class LoomError extends Error {
   constructor(
     public status: number,
     message: string,
@@ -284,7 +284,7 @@ export class CortexError extends Error {
   }
 }
 
-export class CortexClient {
+export class LoomClient {
   constructor(private baseUrl: string = "http://localhost:7420") {
     this.baseUrl = baseUrl.replace(/\/+$/, "");
   }
@@ -308,7 +308,7 @@ export class CortexClient {
       } catch {
         /* keep raw text */
       }
-      throw new CortexError(res.status, detail);
+      throw new LoomError(res.status, detail);
     }
     if (res.status === 204) return undefined as T;
     return (await res.json()) as T;
@@ -457,12 +457,12 @@ export class CortexClient {
   ): Promise<ReadableStream<Uint8Array>> {
     const res = await fetch(`${this.baseUrl}${path}`, { signal });
     if (!res.ok || !res.body) {
-      throw new CortexError(res.status, "failed to open event stream");
+      throw new LoomError(res.status, "failed to open event stream");
     }
     return res.body;
   }
 
-  private async *parseSse(body: ReadableStream<Uint8Array>): AsyncGenerator<CortexEvent> {
+  private async *parseSse(body: ReadableStream<Uint8Array>): AsyncGenerator<LoomEvent> {
     const reader = body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
@@ -475,14 +475,14 @@ export class CortexClient {
         const line = buffer.slice(0, idx).trim();
         buffer = buffer.slice(idx + 1);
         if (line.startsWith("data:")) {
-          yield JSON.parse(line.slice(5).trim()) as CortexEvent;
+          yield JSON.parse(line.slice(5).trim()) as LoomEvent;
         }
       }
     }
   }
 
   /** Async-iterate server events (SSE). Pass a runId to scope to one run. */
-  async *events(runId?: string, signal?: AbortSignal): AsyncGenerator<CortexEvent> {
+  async *events(runId?: string, signal?: AbortSignal): AsyncGenerator<LoomEvent> {
     const path = runId ? `/api/runs/${runId}/events` : "/api/events";
     yield* this.parseSse(await this.openEventStream(path, signal));
   }
@@ -494,7 +494,7 @@ export class CortexClient {
    * so a run that already finished returns immediately instead of blocking
    * on events that were broadcast before we subscribed.
    */
-  async *streamRun(runId: string): AsyncGenerator<CortexEvent> {
+  async *streamRun(runId: string): AsyncGenerator<LoomEvent> {
     const controller = new AbortController();
     const body = await this.openEventStream(`/api/runs/${runId}/events`, controller.signal);
     try {

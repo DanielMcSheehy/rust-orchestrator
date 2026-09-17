@@ -57,4 +57,4 @@ jobs:
         with:
           python-version: "3.12"
       - name: Byte-compile SDK
-        run: python -m compileall sdks/python/cortex_sdk
+        run: python -m compileall sdks/python/loom_sdk

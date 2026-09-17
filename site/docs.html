@@ -142,7 +142,7 @@ git clone https://github.com/DanielMcSheehy/rust-orchestrator &amp;&amp; cd rust
 docker compose up --build
 
 <span class="c"># or natively: Rust 1.80+, Python 3.10+, Node 20+ (22+ for TS tasks)</span>
-cargo run --release -p cortex-server
+cargo run --release -p loom-server
 cd console &amp;&amp; npm install &amp;&amp; npm run build   <span class="c"># then restart the server</span></pre>
 <p>Create and run your first workflow:</p>
 <pre>curl -X POST localhost:7420/api/workflows -H <span class="s">'content-type: application/json'</span> -d <span class="s">'{
@@ -237,7 +237,7 @@ data through datasets (<a href="#data">below</a>).</p>
 surface: deploy (upsert by name), trigger &amp; wait, runs, functions, ingest, query, execute,
 and live event streaming.</p>
 <h3>Python — <code>pip install -e sdks/python</code></h3>
-<pre><span class="k">from</span> cortex_sdk <span class="k">import</span> CortexClient, Flow, task
+<pre><span class="k">from</span> loom_sdk <span class="k">import</span> LoomClient, Flow, task
 
 <span class="p">@task</span>
 <span class="k">def</span> <span class="f">extract</span>(params, inputs):
@@ -247,20 +247,20 @@ and live event streaming.</p>
 <span class="k">def</span> <span class="f">total</span>(params, inputs):
     <span class="k">return</span> <span class="f">sum</span>(inputs[<span class="s">"extract"</span>][<span class="s">"values"</span>])
 
-client = <span class="f">CortexClient</span>(<span class="s">"http://localhost:7420"</span>)
+client = <span class="f">LoomClient</span>(<span class="s">"http://localhost:7420"</span>)
 wf  = client.<span class="f">deploy</span>(<span class="f">Flow</span>(<span class="s">"sum"</span>, params={<span class="s">"n"</span>: <span class="n">100</span>}, tasks=[extract, total]))
 run = client.<span class="f">trigger</span>(wf[<span class="s">"id"</span>], wait=<span class="n">True</span>)
 
 <span class="k">for</span> event <span class="k">in</span> client.<span class="f">stream_run</span>(run[<span class="s">"id"</span>]):   <span class="c"># live SSE</span>
     <span class="f">print</span>(event[<span class="s">"type"</span>], event.<span class="f">get</span>(<span class="s">"line"</span>, <span class="s">""</span>))</pre>
-<h3>TypeScript — <code>@cortex/sdk</code></h3>
-<pre><span class="k">import</span> { CortexClient, flow, task } <span class="k">from</span> <span class="s">"@cortex/sdk"</span>;
+<h3>TypeScript — <code>@loom/sdk</code></h3>
+<pre><span class="k">import</span> { LoomClient, flow, task } <span class="k">from</span> <span class="s">"@loom/sdk"</span>;
 
 <span class="k">const</span> extract = <span class="f">task</span>(<span class="s">"extract"</span>, <span class="k">async</span> (p) =&gt; ({ values: [...] }));
 <span class="k">const</span> rank = <span class="f">task</span>(<span class="s">"rank"</span>, { runtime: <span class="s">"python"</span>, code: <span class="s">"..."</span> },
                  { dependsOn: [extract] });  <span class="c">// mixed runtimes</span>
 
-<span class="k">const</span> client = <span class="k">new</span> <span class="f">CortexClient</span>();
+<span class="k">const</span> client = <span class="k">new</span> <span class="f">LoomClient</span>();
 <span class="k">const</span> wf = <span class="k">await</span> client.<span class="f">deploy</span>(<span class="f">flow</span>(<span class="s">"ranker"</span>, [extract, rank]));
 <span class="k">for await</span> (<span class="k">const</span> ev <span class="k">of</span> client.<span class="f">streamRun</span>(run.id)) { <span class="c">/* live */</span> }</pre>
 <p>Handler-function tasks are serialized as source (<code>Function.prototype.toString()</code> /
@@ -270,16 +270,16 @@ run = client.<span class="f">trigger</span>(wf[<span class="s">"id"</span>], wai
 <section id="bindings">
 <h2>In-task bindings</h2>
 <p>Every task and function gets platform bindings injected into its runtime —
-<code>import cortex</code> in Python, the <code>cortex</code> global in JS/TS — no packages needed
+<code>import loom</code> in Python, the <code>loom</code> global in JS/TS — no packages needed
 in the worker environment:</p>
-<pre><span class="k">import</span> cortex
+<pre><span class="k">import</span> loom
 
 <span class="k">def</span> <span class="f">handler</span>(params, inputs):
-    rows = cortex.<span class="f">query</span>(<span class="s">"SELECT zone, AVG(value) v FROM telemetry GROUP BY zone"</span>)
-    cortex.<span class="f">ingest</span>(<span class="s">"zone-aggregates"</span>, rows)      <span class="c"># derived dataset</span>
-    <span class="k">return</span> cortex.<span class="f">invoke</span>(<span class="s">"notify"</span>, {<span class="s">"n"</span>: <span class="f">len</span>(rows)})</pre>
-<p><code>cortex.query(sql, limit=)</code> · <code>cortex.ingest(dataset, records)</code> ·
-<code>cortex.invoke(name, params)</code>. Calls go to <code>CORTEX_API_URL</code>
+    rows = loom.<span class="f">query</span>(<span class="s">"SELECT zone, AVG(value) v FROM telemetry GROUP BY zone"</span>)
+    loom.<span class="f">ingest</span>(<span class="s">"zone-aggregates"</span>, rows)      <span class="c"># derived dataset</span>
+    <span class="k">return</span> loom.<span class="f">invoke</span>(<span class="s">"notify"</span>, {<span class="s">"n"</span>: <span class="f">len</span>(rows)})</pre>
+<p><code>loom.query(sql, limit=)</code> · <code>loom.ingest(dataset, records)</code> ·
+<code>loom.invoke(name, params)</code>. Calls go to <code>LOOM_API_URL</code>
 (set automatically) and bypass HTTP proxies.</p>
 </section>
 
@@ -364,7 +364,7 @@ warm lambdas).</p>
 <tr><td>SQL over 1.8M rows</td><td>~250 ms GROUP BY (embedded Polars)</td></tr>
 <tr><td>footprint</td><td>16 MB RAM idle · workers ~10 MB (py) / ~46 MB (node) · 205 MB peak during heaviest query · 67 MB binary</td></tr>
 </tbody></table>
-<p>Sizing: a 512 MB VPS runs light workloads (trim <code>CORTEX_WORKER_MAX_IDLE</code>);
+<p>Sizing: a 512 MB VPS runs light workloads (trim <code>LOOM_WORKER_MAX_IDLE</code>);
 1 GB is comfortable for everything documented here; add headroom roughly equal to your largest
 query's working set.</p>
 </section>
@@ -377,30 +377,30 @@ query's working set.</p>
 <ol>
 <li><b>+ New Resource → Docker Compose</b>, point at the repository.</li>
 <li>Set <b>Docker Compose Location</b> to <code>/docker-compose.coolify.yml</code>.</li>
-<li>Assign a domain — the <code>SERVICE_FQDN_CORTEX_7420</code> magic variable routes Coolify's
+<li>Assign a domain — the <code>SERVICE_FQDN_LOOM_7420</code> magic variable routes Coolify's
 proxy to the server (SSE included). The healthcheck drives status and rolling restarts.</li>
 </ol>
 <h3>Bare binary</h3>
-<pre>cargo build --release -p cortex-server
-CORTEX_DATA_DIR=/var/lib/cortex ./target/release/cortex-server</pre>
+<pre>cargo build --release -p loom-server
+LOOM_DATA_DIR=/var/lib/loom ./target/release/loom-server</pre>
 </section>
 
 <section id="config">
 <h2>Configuration reference</h2>
 <table><thead><tr><th>Variable</th><th>Default</th><th>Meaning</th></tr></thead><tbody>
-<tr><td>CORTEX_PORT</td><td>7420</td><td>HTTP port (API, console, MCP).</td></tr>
-<tr><td>CORTEX_DATA_DIR</td><td>./data</td><td>SQLite file + dataset NDJSON files.</td></tr>
-<tr><td>CORTEX_CONSOLE_DIST</td><td>./console/dist</td><td>Built console to serve at <code>/</code> (skipped if absent).</td></tr>
-<tr><td>CORTEX_ISOLATION</td><td>process</td><td><code>process</code> | <code>container</code> | <code>microvm</code>.</td></tr>
-<tr><td>CORTEX_WORKER_POOL</td><td>1</td><td><code>0</code> disables warm pooling (process mode).</td></tr>
-<tr><td>CORTEX_WORKER_MAX_IDLE</td><td>8</td><td>Warm workers kept per runtime.</td></tr>
-<tr><td>CORTEX_WORKER_MAX_JOBS</td><td>128</td><td>Jobs before a worker retires.</td></tr>
-<tr><td>CORTEX_PYTHON_BIN / CORTEX_NODE_BIN</td><td>python3 / node</td><td>Interpreter binaries (process mode).</td></tr>
-<tr><td>CORTEX_CONTAINER_ENGINE</td><td>docker</td><td>Engine for container/microvm modes.</td></tr>
-<tr><td>CORTEX_VM_RUNTIME</td><td>kata</td><td>OCI runtime class for microvm mode.</td></tr>
-<tr><td>CORTEX_PYTHON_IMAGE / CORTEX_NODE_IMAGE</td><td>python:3.12-slim / node:22-slim</td><td>Sandbox images.</td></tr>
-<tr><td>CORTEX_WORKER_MEMORY / CORTEX_WORKER_CPUS</td><td>512m / 1</td><td>Per-sandbox caps.</td></tr>
-<tr><td>CORTEX_API_URL</td><td>auto</td><td>Where in-task bindings call back (set for workers automatically).</td></tr>
+<tr><td>LOOM_PORT</td><td>7420</td><td>HTTP port (API, console, MCP).</td></tr>
+<tr><td>LOOM_DATA_DIR</td><td>./data</td><td>SQLite file + dataset NDJSON files.</td></tr>
+<tr><td>LOOM_CONSOLE_DIST</td><td>./console/dist</td><td>Built console to serve at <code>/</code> (skipped if absent).</td></tr>
+<tr><td>LOOM_ISOLATION</td><td>process</td><td><code>process</code> | <code>container</code> | <code>microvm</code>.</td></tr>
+<tr><td>LOOM_WORKER_POOL</td><td>1</td><td><code>0</code> disables warm pooling (process mode).</td></tr>
+<tr><td>LOOM_WORKER_MAX_IDLE</td><td>8</td><td>Warm workers kept per runtime.</td></tr>
+<tr><td>LOOM_WORKER_MAX_JOBS</td><td>128</td><td>Jobs before a worker retires.</td></tr>
+<tr><td>LOOM_PYTHON_BIN / LOOM_NODE_BIN</td><td>python3 / node</td><td>Interpreter binaries (process mode).</td></tr>
+<tr><td>LOOM_CONTAINER_ENGINE</td><td>docker</td><td>Engine for container/microvm modes.</td></tr>
+<tr><td>LOOM_VM_RUNTIME</td><td>kata</td><td>OCI runtime class for microvm mode.</td></tr>
+<tr><td>LOOM_PYTHON_IMAGE / LOOM_NODE_IMAGE</td><td>python:3.12-slim / node:22-slim</td><td>Sandbox images.</td></tr>
+<tr><td>LOOM_WORKER_MEMORY / LOOM_WORKER_CPUS</td><td>512m / 1</td><td>Per-sandbox caps.</td></tr>
+<tr><td>LOOM_API_URL</td><td>auto</td><td>Where in-task bindings call back (set for workers automatically).</td></tr>
 <tr><td>RUST_LOG</td><td>info</td><td>Tracing filter.</td></tr>
 </tbody></table>
 </section>

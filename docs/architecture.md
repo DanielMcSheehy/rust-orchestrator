@@ -52,7 +52,7 @@ console shows historical runs identically to live ones.
 One JSON request line on stdin, JSON-lines events on stdout:
 
 ```
-→ {"entry": "/tmp/cortex-job-x/job.py", "params": {...}, "inputs": {...}}
+→ {"entry": "/tmp/loom-job-x/job.py", "params": {...}, "inputs": {...}}
 ← {"type": "log", "line": "..."}          (repeated, streamed live)
 ← {"type": "result", "value": <json>}     (exactly one, on success)
 ← {"type": "error", "message", "trace"}   (exactly one, on failure)
@@ -61,7 +61,7 @@ One JSON request line on stdin, JSON-lines events on stdout:
 The shim loops over requests, so one worker process can serve many jobs.
 In one-shot mode stderr is captured and tagged `[stderr]` into the log
 stream; pooled workers inherit the server's stderr. The shims are embedded
-in the `cortex-executor` binary (`include_str!`) and materialized to a temp
+in the `loom-executor` binary (`include_str!`) and materialized to a temp
 dir at startup — no runtime file dependencies.
 
 ## Warm worker pool
@@ -74,10 +74,10 @@ executor pools workers (`pool.rs`):
   time over the same stdin/stdout channel
 - a clean finish (result *or* in-workload error) returns the worker to the
   pool; timeouts, protocol errors, and EOF kill it instead
-- workers retire after `CORTEX_WORKER_MAX_JOBS` (default 128) jobs — this
+- workers retire after `LOOM_WORKER_MAX_JOBS` (default 128) jobs — this
   bounds interpreter-level accumulation such as Node's ESM module cache,
   which grows because every job is imported from a unique scratch path —
-  and at most `CORTEX_WORKER_MAX_IDLE` (default 8) stay warm per runtime
+  and at most `LOOM_WORKER_MAX_IDLE` (default 8) stay warm per runtime
 - one Node pool serves both JS and TS (started with
   `--experimental-strip-types`, a no-op for plain JS)
 
@@ -93,7 +93,7 @@ TypeScript support uses Node 22's built-in type stripping
 
 ## Streaming
 
-- `tokio::sync::broadcast` fans out `CortexEvent`s (run/task updates, logs,
+- `tokio::sync::broadcast` fans out `LoomEvent`s (run/task updates, logs,
   ingests, function invocations) to any number of SSE subscribers.
 - Slow SSE consumers that miss buffer capacity skip dropped events rather
   than killing the stream.
@@ -104,7 +104,7 @@ TypeScript support uses Node 22's built-in type stripping
 ## Dataframe engine
 
 Rather than inventing a dataframe library, the server embeds **Polars** — the
-Rust dataframe engine — and exposes it everywhere (`cortex-server/src/data.rs`):
+Rust dataframe engine — and exposes it everywhere (`loom-server/src/data.rs`):
 
 - `POST /api/query {"sql", "limit"}`: every ingested dataset registers as a
   SQL table (dashed names also aliased with underscores), so aggregations and
@@ -115,9 +115,9 @@ Rust dataframe engine — and exposes it everywhere (`cortex-server/src/data.rs`
 - Results are row-capped (`limit`, default 10k, max 200k) with an explicit
   `truncated` flag — the API returns summaries, not datasets.
 - The same engine is reachable from the SDKs (`client.query(...)`) and from
-  *inside* workloads: the worker shims materialize `cortex.py` / `cortex.mjs`
-  bindings (`import cortex` in Python, the `cortex` global in JS/TS) that
-  call back to the server over `CORTEX_API_URL`. Tasks aggregate millions of
+  *inside* workloads: the worker shims materialize `loom.py` / `loom.mjs`
+  bindings (`import loom` in Python, the `loom` global in JS/TS) that
+  call back to the server over `LOOM_API_URL`. Tasks aggregate millions of
   rows in Rust and pass small results downstream — no pandas/numpy needed in
   the worker environment.
 
@@ -156,7 +156,7 @@ while the model evolves, and reads never block the orchestrator's writes.
 ## Workload isolation
 
 The executor builds a `LaunchPlan` per task execution
-(`cortex-executor/src/isolation.rs`); the plan decides *what* gets spawned
+(`loom-executor/src/isolation.rs`); the plan decides *what* gets spawned
 while the protocol stays identical:
 
 - **`process`** (default) — the interpreter is a direct child process.
@@ -164,14 +164,14 @@ while the protocol stays identical:
 - **`container`** — `docker|podman run --rm -i` with `--network none`,
   `--read-only` rootfs (+ tmpfs `/tmp`), `--pids-limit`, `--memory`, and
   `--cpus` caps. The shim and job directories are bind-mounted read-only at
-  `/cortex/shim` and `/cortex/job`; the request's `entry` path is rewritten
+  `/loom/shim` and `/loom/job`; the request's `entry` path is rewritten
   to the guest mount.
 - **`microvm`** — the same container invocation with an OCI **runtime class**
   that backs each container with a hardware-virtualized guest (Kata
   Containers, or Firecracker through `kata-fc`/firecracker-containerd).
   Each task gets its own kernel; a container-escape in user code lands
   inside a throwaway VM, not on the host. Defaults `--runtime kata`;
-  override with `CORTEX_VM_RUNTIME`.
+  override with `LOOM_VM_RUNTIME`.
 
 Timeout handling kills the engine client *and* issues `<engine> kill
 <container-name>` so a wedged worker VM can't be orphaned. Host paths never

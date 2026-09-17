@@ -1,4 +1,4 @@
-# cortex-sdk (Python)
+# loom-sdk (Python)
 
 Python bindings for [Loom](../../README.md). Zero dependencies — everything
 runs on the standard library.
@@ -10,7 +10,7 @@ pip install -e sdks/python
 ## Define and deploy a flow
 
 ```python
-from cortex_sdk import CortexClient, Flow, task
+from loom_sdk import LoomClient, Flow, task
 
 @task
 def extract(params, inputs):
@@ -21,7 +21,7 @@ def extract(params, inputs):
 def total(params, inputs):
     return sum(inputs["extract"]["values"])
 
-client = CortexClient("http://localhost:7420")
+client = LoomClient("http://localhost:7420")
 workflow = client.deploy(Flow("sum-pipeline", params={"n": 100}, tasks=[extract, total]))
 
 run = client.trigger(workflow["id"], wait=True)
@@ -45,7 +45,7 @@ for event in client.stream_run(run["id"]):
 
 ```python
 client.create_function("hello", "def handler(params, inputs):\n    return f\"hi {params['name']}\"\n")
-print(client.invoke("hello", {"name": "cortex"}))   # {"ok": true, "result": "hi cortex", ...}
+print(client.invoke("hello", {"name": "loom"}))   # {"ok": true, "result": "hi loom", ...}
 ```
 
 ## Ingest data

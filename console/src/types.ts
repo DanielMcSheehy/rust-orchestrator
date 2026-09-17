@@ -55,7 +55,7 @@ export interface TaskRun {
   finished_at?: string | null;
 }
 
-export interface CortexFunction {
+export interface LoomFunction {
   id: string;
   spec: {
     name: string;
@@ -136,7 +136,7 @@ export interface Notebook {
   updated_at: string;
 }
 
-export type CortexEvent =
+export type LoomEvent =
   | { type: "run_updated"; ts: string; run: Run }
   | { type: "task_updated"; ts: string; task: TaskRun }
   | { type: "log"; ts: string; run_id: string; task_id: string; line: string }

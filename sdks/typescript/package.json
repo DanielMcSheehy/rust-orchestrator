@@ -1,5 +1,5 @@
 {
-  "name": "@cortex/sdk",
+  "name": "@loom/sdk",
   "version": "0.1.0",
   "description": "TypeScript/JavaScript bindings for the Loom orchestration platform",
   "license": "MIT",

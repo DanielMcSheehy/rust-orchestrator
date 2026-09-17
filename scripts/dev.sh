@@ -9,9 +9,9 @@ if [ ! -d console/node_modules ]; then
   (cd console && npm install)
 fi
 
-cargo build -p cortex-server
+cargo build -p loom-server
 
 trap 'kill 0' EXIT
-cargo run -p cortex-server &
+cargo run -p loom-server &
 (cd console && npm run dev) &
 wait

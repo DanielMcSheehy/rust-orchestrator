@@ -2,7 +2,7 @@
 workflow crunch it — Python for extraction/stats, TypeScript for shaping.
 
     pip install -e sdks/python   (or just run from the repo root)
-    cargo run -p cortex-server   (in another terminal)
+    cargo run -p loom-server   (in another terminal)
     python examples/python_pipeline.py
 """
 import random
@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "sdks" / "python"))
 
-from cortex_sdk import CortexClient, Flow, Task, task
+from loom_sdk import LoomClient, Flow, Task, task
 
 
 @task
@@ -53,7 +53,7 @@ shape_report = Task(
 
 
 def main():
-    client = CortexClient("http://localhost:7420")
+    client = LoomClient("http://localhost:7420")
 
     flow = Flow(
         "sensor-stats",

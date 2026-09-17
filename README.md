@@ -28,7 +28,7 @@ binary, SQLite inside. No broker, no external database, no YAML.
 - **SQL dataframe engine** — every ingested dataset is queryable with SQL,
   executed in-process by [Polars](https://pola.rs) (a Rust dataframe engine):
   `POST /api/query`, `client.query(...)` in both SDKs, a query panel in the
-  console, and — inside any task or function — `cortex.query(...)` bindings,
+  console, and — inside any task or function — `loom.query(...)` bindings,
   so workloads aggregate millions of rows in Rust without pandas installed.
 - **Triggers** — manual, interval (`every_secs`), or data-driven
   (`on_ingest: dataset` runs the workflow after every ingest batch).
@@ -72,16 +72,16 @@ Every screenshot below is the real UI, served by the binary itself.
 
 ## Architecture
 
-![Architecture — clients, cortex-server, executor, store](docs/screenshots/architecture.png)
+![Architecture — clients, loom-server, executor, store](docs/screenshots/architecture.png)
 
 Crates:
 
 | Crate | Role |
 | --- | --- |
-| [`cortex-core`](crates/cortex-core) | Domain model: workflows, tasks, runs, events, DAG validation + layering |
-| [`cortex-store`](crates/cortex-store) | Embedded SQLite persistence (WAL), stats |
-| [`cortex-executor`](crates/cortex-executor) | Process-isolated Python/Node workers, streamed logs, timeouts |
-| [`cortex-server`](crates/cortex-server) | axum API, orchestrator, scheduler, SSE, ingestion, functions |
+| [`loom-core`](crates/loom-core) | Domain model: workflows, tasks, runs, events, DAG validation + layering |
+| [`loom-store`](crates/loom-store) | Embedded SQLite persistence (WAL), stats |
+| [`loom-executor`](crates/loom-executor) | Process-isolated Python/Node workers, streamed logs, timeouts |
+| [`loom-server`](crates/loom-server) | axum API, orchestrator, scheduler, SSE, ingestion, functions |
 
 ## Quickstart
 
@@ -89,7 +89,7 @@ Requirements: Rust 1.80+, Python 3.10+, Node 20+ (22+ for TypeScript tasks).
 
 ```bash
 # 1. Run the server (API on :7420)
-cargo run --release -p cortex-server
+cargo run --release -p loom-server
 
 # 2. Build + serve the console through the server
 cd console && npm install && npm run build && cd ..
@@ -110,8 +110,8 @@ docker compose up --build        # everything on http://localhost:7420
 1. **+ New Resource → Docker Compose**, point it at this repository.
 2. Set **Docker Compose Location** to `/docker-compose.coolify.yml`.
 3. Assign a domain on the resource (or let Coolify generate one) — the
-   `SERVICE_FQDN_CORTEX_7420` magic variable routes Coolify's proxy to the
-   server, SSE included. Data persists in the `cortex-data` volume and the
+   `SERVICE_FQDN_LOOM_7420` magic variable routes Coolify's proxy to the
+   server, SSE included. Data persists in the `loom-data` volume and the
    healthcheck drives status/rolling restarts.
 
 The API has no authentication (trusted single-tenant): keep the resource
@@ -139,7 +139,7 @@ curl -N localhost:7420/api/events              # → live SSE stream
 ### Your first workflow (Python SDK)
 
 ```python
-from cortex_sdk import CortexClient, Flow, task
+from loom_sdk import LoomClient, Flow, task
 
 @task
 def extract(params, inputs):
@@ -149,7 +149,7 @@ def extract(params, inputs):
 def total(params, inputs):
     return sum(inputs["extract"]["values"])
 
-client = CortexClient("http://localhost:7420")
+client = LoomClient("http://localhost:7420")
 wf = client.deploy(Flow("hello-pipeline", params={"n": 100}, tasks=[extract, total]))
 run = client.trigger(wf["id"], wait=True)      # → state: completed
 ```
@@ -206,18 +206,18 @@ Per-task knobs: `depends_on`, `retries`, `timeout_secs`, `params`. Workflow
 knobs: `max_parallel_tasks`, `triggers.every_secs`, `triggers.on_ingest`.
 
 Every task and function also gets **in-task platform bindings** — `import
-cortex` in Python, the `cortex` global in JS/TS — for querying data on the
+loom` in Python, the `loom` global in JS/TS — for querying data on the
 Rust engine, ingesting results, and invoking functions:
 
 ```python
-import cortex
+import loom
 
 def handler(params, inputs):
-    rows = cortex.query("""
+    rows = loom.query("""
         SELECT zone, AVG(value) AS avg_value, COUNT(*) AS n
         FROM telemetry WHERE value > 10 GROUP BY zone
     """)
-    cortex.ingest("zone-aggregates", rows)
+    loom.ingest("zone-aggregates", rows)
     return {"zones": len(rows)}
 ```
 
@@ -233,9 +233,9 @@ cd console && npm run typecheck && npm run build
 cd sdks/typescript && npm run build
 ```
 
-Configuration (env vars): `CORTEX_PORT` (7420), `CORTEX_DATA_DIR` (`./data`),
-`CORTEX_CONSOLE_DIST` (`./console/dist`), `CORTEX_PYTHON_BIN` (`python3`),
-`CORTEX_NODE_BIN` (`node`), `RUST_LOG` (`info`).
+Configuration (env vars): `LOOM_PORT` (7420), `LOOM_DATA_DIR` (`./data`),
+`LOOM_CONSOLE_DIST` (`./console/dist`), `LOOM_PYTHON_BIN` (`python3`),
+`LOOM_NODE_BIN` (`node`), `RUST_LOG` (`info`).
 
 ## Performance
 
@@ -254,15 +254,15 @@ Measured on a modest dev container (release build, SQLite store, real Python
 The number that makes this possible is the **warm worker pool**: interpreters
 are reused across tasks (the shims loop over jobs on stdin), so the
 30–115 ms interpreter startup cost is paid once, not per task. Pooling is
-automatic in `process` isolation mode; disable with `CORTEX_WORKER_POOL=0`,
-tune with `CORTEX_WORKER_MAX_IDLE` (8 idle workers kept per runtime) and
-`CORTEX_WORKER_MAX_JOBS` (retire a worker after 128 jobs). Container and
+automatic in `process` isolation mode; disable with `LOOM_WORKER_POOL=0`,
+tune with `LOOM_WORKER_MAX_IDLE` (8 idle workers kept per runtime) and
+`LOOM_WORKER_MAX_JOBS` (retire a worker after 128 jobs). Container and
 microVM modes intentionally never pool — a fresh sandbox per task is their
 purpose.
 
 ## Workload isolation
 
-Workers run at one of three isolation tiers, selected with `CORTEX_ISOLATION`.
+Workers run at one of three isolation tiers, selected with `LOOM_ISOLATION`.
 All tiers speak the same stdio protocol — the orchestrator doesn't care which
 one is active.
 
@@ -274,16 +274,16 @@ one is active.
 
 ```bash
 # containers
-CORTEX_ISOLATION=container cargo run -p cortex-server
+LOOM_ISOLATION=container cargo run -p loom-server
 
 # microVMs (requires a VM runtime registered with your engine, e.g. Kata)
-CORTEX_ISOLATION=microvm CORTEX_VM_RUNTIME=io.containerd.kata.v2 cargo run -p cortex-server
+LOOM_ISOLATION=microvm LOOM_VM_RUNTIME=io.containerd.kata.v2 cargo run -p loom-server
 ```
 
-Container/microVM knobs: `CORTEX_CONTAINER_ENGINE` (`docker`),
-`CORTEX_VM_RUNTIME` (`kata` when mode is `microvm`), `CORTEX_PYTHON_IMAGE`
-(`python:3.12-slim`), `CORTEX_NODE_IMAGE` (`node:22-slim`),
-`CORTEX_WORKER_MEMORY` (`512m`), `CORTEX_WORKER_CPUS` (`1`). Timed-out
+Container/microVM knobs: `LOOM_CONTAINER_ENGINE` (`docker`),
+`LOOM_VM_RUNTIME` (`kata` when mode is `microvm`), `LOOM_PYTHON_IMAGE`
+(`python:3.12-slim`), `LOOM_NODE_IMAGE` (`node:22-slim`),
+`LOOM_WORKER_MEMORY` (`512m`), `LOOM_WORKER_CPUS` (`1`). Timed-out
 workers are killed by container name so nothing is orphaned.
 
 ## Repository layout
@@ -291,8 +291,8 @@ workers are killed by container name so nothing is orphaned.
 ```
 crates/            Rust workspace (core, store, executor, server)
 console/           React + Vite console
-sdks/python/       cortex-sdk (zero-dep Python bindings)
-sdks/typescript/   @cortex/sdk (zero-dep TS bindings)
+sdks/python/       loom-sdk (zero-dep Python bindings)
+sdks/typescript/   @loom/sdk (zero-dep TS bindings)
 examples/          Runnable example pipelines
 docs/              Architecture notes & screenshots
 site/              Landing page (single self-contained HTML — host it anywhere)

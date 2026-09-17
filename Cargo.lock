@@ -469,7 +469,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 
 [[package]]
-name = "cortex-core"
+name = "loom-core"
 version = "0.1.0"
 dependencies = [
  "chrono",
@@ -480,11 +480,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "cortex-executor"
+name = "loom-executor"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "cortex-core",
+ "loom-core",
  "serde",
  "serde_json",
  "tempfile",
@@ -494,15 +494,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "cortex-server"
+name = "loom-server"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
  "chrono",
- "cortex-core",
- "cortex-executor",
- "cortex-store",
+ "loom-core",
+ "loom-executor",
+ "loom-store",
  "futures",
  "polars",
  "reqwest",
@@ -520,12 +520,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "cortex-store"
+name = "loom-store"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "chrono",
- "cortex-core",
+ "loom-core",
  "parking_lot",
  "rusqlite",
  "serde",

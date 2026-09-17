@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, timeAgo } from "../api";
 import CodeEditor, { CodeBlock } from "../components/CodeEditor";
 import { Empty, RuntimeBadge } from "../components/ui";
-import type { CortexFunction, RuntimeName } from "../types";
+import type { LoomFunction, RuntimeName } from "../types";
 
 const TEMPLATES: Record<RuntimeName, string> = {
   python: `def handler(params, inputs):\n    name = params.get("name", "world")\n    return {"greeting": f"hello {name}"}\n`,
@@ -19,7 +19,7 @@ interface InvokeResult {
 }
 
 export default function Functions() {
-  const [functions, setFunctions] = useState<CortexFunction[]>([]);
+  const [functions, setFunctions] = useState<LoomFunction[]>([]);
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("hello");
   const [runtime, setRuntime] = useState<RuntimeName>("python");
@@ -35,7 +35,7 @@ export default function Functions() {
   const [editError, setEditError] = useState<string | null>(null);
 
   const refresh = useCallback(() => {
-    api.get<CortexFunction[]>("/api/functions").then(setFunctions).catch(() => {});
+    api.get<LoomFunction[]>("/api/functions").then(setFunctions).catch(() => {});
   }, []);
 
   useEffect(refresh, [refresh]);
@@ -73,14 +73,14 @@ export default function Functions() {
     }
   };
 
-  const startEdit = (f: CortexFunction) => {
+  const startEdit = (f: LoomFunction) => {
     setEditing(f.spec.name);
     setEditCode(f.spec.code);
     setEditRuntime(f.spec.runtime);
     setEditError(null);
   };
 
-  const saveEdit = async (f: CortexFunction) => {
+  const saveEdit = async (f: LoomFunction) => {
     setEditError(null);
     try {
       // POST is an upsert on function name; keep the existing timeout.

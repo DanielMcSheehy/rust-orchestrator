@@ -1,10 +1,10 @@
 [workspace]
 resolver = "2"
 members = [
-  "crates/cortex-core",
-  "crates/cortex-store",
-  "crates/cortex-executor",
-  "crates/cortex-server",
+  "crates/loom-core",
+  "crates/loom-store",
+  "crates/loom-executor",
+  "crates/loom-server",
 ]
 
 [workspace.package]

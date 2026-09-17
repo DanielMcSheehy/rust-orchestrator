@@ -1,11 +1,11 @@
 services:
-  cortex:
+  loom:
     build: .
     restart: unless-stopped
     ports:
       - "7420:7420"
     volumes:
-      - cortex-data:/data
+      - loom-data:/data
     environment:
       RUST_LOG: info
     healthcheck:
@@ -16,4 +16,4 @@ services:
       start_period: 15s
 
 volumes:
-  cortex-data:
+  loom-data:

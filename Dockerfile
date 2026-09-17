@@ -15,7 +15,7 @@ FROM rust:1-bookworm AS server
 WORKDIR /build
 COPY Cargo.toml Cargo.lock ./
 COPY crates/ crates/
-RUN cargo build --release -p cortex-server
+RUN cargo build --release -p loom-server
 
 # ── runtime: rust binary + python + node workers ─────────────────────────
 FROM node:22-bookworm-slim
@@ -23,11 +23,11 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 ca-certificates curl \
   && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-COPY --from=server /build/target/release/cortex-server /usr/local/bin/cortex-server
+COPY --from=server /build/target/release/loom-server /usr/local/bin/loom-server
 COPY --from=console /build/dist /app/console/dist
-ENV CORTEX_PORT=7420 \
-    CORTEX_DATA_DIR=/data \
-    CORTEX_CONSOLE_DIST=/app/console/dist
+ENV LOOM_PORT=7420 \
+    LOOM_DATA_DIR=/data \
+    LOOM_CONSOLE_DIST=/app/console/dist
 VOLUME /data
 EXPOSE 7420
-CMD ["cortex-server"]
+CMD ["loom-server"]

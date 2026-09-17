@@ -2,10 +2,10 @@
  * Deploy and run a mixed-runtime flow from TypeScript, streaming logs live.
  *
  *   cd sdks/typescript && npm install && npm run build   (once)
- *   cargo run -p cortex-server                           (in another terminal)
+ *   cargo run -p loom-server                           (in another terminal)
  *   node examples/typescript_pipeline.mts
  */
-import { CortexClient, flow, task } from "../sdks/typescript/dist/index.js";
+import { LoomClient, flow, task } from "../sdks/typescript/dist/index.js";
 
 const fetchPage = task("fetch_page", async (params) => {
   const size = params.page_size as number;
@@ -39,7 +39,7 @@ const summarize = task(
   { dependsOn: [rank] },
 );
 
-const client = new CortexClient("http://localhost:7420");
+const client = new LoomClient("http://localhost:7420");
 const wf = await client.deploy(
   flow("ranker", [fetchPage, rank, summarize], { params: { page_size: 200 } }),
 );

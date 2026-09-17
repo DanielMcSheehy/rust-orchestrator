@@ -3,15 +3,15 @@
 ## Crate boundaries (dependency direction is one-way)
 
 ```
-cortex-core  ←  cortex-store      (persistence)
-             ←  cortex-executor   (worker processes)
-             ←  cortex-server     (axum API, orchestrator, scheduler, data, mcp)
+loom-core  ←  loom-store      (persistence)
+             ←  loom-executor   (worker processes)
+             ←  loom-server     (axum API, orchestrator, scheduler, data, mcp)
 ```
 
-- `cortex-core` does **no I/O** — domain types, DAG algebra, events only.
+- `loom-core` does **no I/O** — domain types, DAG algebra, events only.
   Anything shared between crates belongs here.
-- `cortex-store` and `cortex-executor` never import each other.
-- `cortex-server` is the only binary and the only crate that knows about HTTP.
+- `loom-store` and `loom-executor` never import each other.
+- `loom-server` is the only binary and the only crate that knows about HTTP.
 
 ## Conventions
 
@@ -22,7 +22,7 @@ cortex-core  ←  cortex-store      (persistence)
   `python3`/`node` processes — keep them fast (<2s each) and self-contained.
 - CI gates `cargo clippy --workspace --all-targets -- -D warnings`.
 
-## Store (cortex-store)
+## Store (loom-store)
 
 - **JSON-document pattern**: full structs serialize into a `data TEXT` column;
   extra columns exist *only* for filtering/sorting (`state`, `workflow_id`,
@@ -33,7 +33,7 @@ cortex-core  ←  cortex-store      (persistence)
 - SQLite is WAL mode behind a `parking_lot::Mutex<Connection>` — calls are
   short and synchronous; do not hold the lock across `await`.
 
-## Orchestrator invariants (cortex-server/src/orchestrator.rs)
+## Orchestrator invariants (loom-server/src/orchestrator.rs)
 
 - Execution walks `topo_layers` (Kahn); within a layer tasks run concurrently,
   bounded by `max_parallel_tasks` via a semaphore.
@@ -56,7 +56,7 @@ cortex-core  ←  cortex-store      (persistence)
   `{dataset, records, bytes, path}` — tasks read the file from `path`, the
   payload never rides through the API.
 
-## Data engine (cortex-server/src/data.rs)
+## Data engine (loom-server/src/data.rs)
 
 - Every dataset registers as a SQL table + a `-`→`_` alias. Scans are lazy
   (`LazyJsonLineReader`); queries run under `spawn_blocking`, never on the
@@ -64,7 +64,7 @@ cortex-core  ←  cortex-store      (persistence)
 - Results are row-capped (`limit`, clamp 1..=200_000) and fetch limit+1 to set
   `truncated` honestly. The API returns summaries, not datasets.
 
-## MCP (cortex-server/src/mcp.rs)
+## MCP (loom-server/src/mcp.rs)
 
 - Hand-rolled JSON-RPC (streamable HTTP, stateless). Notifications (no `id`)
   → 202 empty. Tool results wrap JSON in `content[0].text`; tool failures set

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { CortexEvent } from "./types";
+import type { LoomEvent } from "./types";
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const init: RequestInit = { method };
@@ -29,14 +29,14 @@ export const api = {
 };
 
 /** Subscribe to the server's live SSE stream (optionally scoped to a run). */
-export function useEvents(onEvent: (ev: CortexEvent) => void, runId?: string) {
+export function useEvents(onEvent: (ev: LoomEvent) => void, runId?: string) {
   const handler = useRef(onEvent);
   handler.current = onEvent;
   useEffect(() => {
     const source = new EventSource(runId ? `/api/runs/${runId}/events` : "/api/events");
     source.onmessage = (msg) => {
       try {
-        handler.current(JSON.parse(msg.data) as CortexEvent);
+        handler.current(JSON.parse(msg.data) as LoomEvent);
       } catch {
         /* malformed frame — skip */
       }

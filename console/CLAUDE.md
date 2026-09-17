@@ -48,7 +48,7 @@ npm run build      # tsc -b && vite build — the build IS the typecheck
 ## Verification rule
 
 UI changes are not done until seen: build, serve via the release server
-(`CORTEX_CONSOLE_DIST=console/dist`), drive with Playwright
+(`LOOM_CONSOLE_DIST=console/dist`), drive with Playwright
 (`executablePath: /opt/pw-browsers/chromium`, `waitUntil: "load"` — SSE keeps
 `networkidle` from ever firing), screenshot, and look at it. Interactive
 features (editors, live progress) get a behavioral check (type/click, assert),

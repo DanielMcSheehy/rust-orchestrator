@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "cortex-sdk"
+name = "loom-sdk"
 version = "0.1.0"
 description = "Python bindings for the Loom orchestration platform: define flows and tasks in Python, deploy and stream them against a Loom server"
 readme = "README.md"
@@ -12,4 +12,4 @@ license = { text = "MIT" }
 dependencies = []
 
 [tool.setuptools.packages.find]
-include = ["cortex_sdk*"]
+include = ["loom_sdk*"]

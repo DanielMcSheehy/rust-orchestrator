@@ -221,7 +221,7 @@ footer .right{margin-left:auto;display:flex;gap:18px}
       </g>
       <text x="230" y="182" style="fill:var(--ink-3);font-size:11px;font-family:var(--mono)">1.8M rows · embedded Polars ↑</text>
     </svg>
-    <div class="logline">▸ score │ <span>cortex.query()</span> aggregating on the Rust engine…</div>
+    <div class="logline">▸ score │ <span>loom.query()</span> aggregating on the Rust engine…</div>
   </div>
 </div>
 
@@ -247,7 +247,7 @@ footer .right{margin-left:auto;display:flex;gap:18px}
     <div class="card reveal"><div class="ico"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></div>
       <h3>Streaming everything</h3><p>Run states, task logs, and metrics broadcast over <b>SSE</b>. Ingestion consumes NDJSON chunk-by-chunk at ~780 MB/s — gigabyte payloads never sit in memory.</p></div>
     <div class="card reveal"><div class="ico"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5v13c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-13M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/></svg></div>
-      <h3>SQL on a Rust engine</h3><p>Every dataset is a table. <b>Embedded Polars</b> aggregates 1.8M rows in ~250 ms — from the API, the SDKs, notebook cells, or <span class="mono">cortex.query()</span> inside any task. Postgres, ClickHouse &amp; chDB connectors included.</p></div>
+      <h3>SQL on a Rust engine</h3><p>Every dataset is a table. <b>Embedded Polars</b> aggregates 1.8M rows in ~250 ms — from the API, the SDKs, notebook cells, or <span class="mono">loom.query()</span> inside any task. Postgres, ClickHouse &amp; chDB connectors included.</p></div>
     <div class="card reveal"><div class="ico"><svg viewBox="0 0 24 24"><path d="M4 17l6-5-6-5M12 19h8"/></svg></div>
       <h3>Serverless functions</h3><p>Deploy a handler in either language, invoke over HTTP with JSON or stream logs + result via SSE. <b>~775 invocations/s</b> on a dev container.</p></div>
     <div class="card reveal"><div class="ico"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 3v18M12 8h4M12 12h4"/></svg></div>
@@ -294,7 +294,7 @@ footer .right{margin-left:auto;display:flex;gap:18px}
   <div class="codes">
     <div class="codebox reveal">
       <div class="bar">pipeline.py<span class="tag">python sdk · zero deps</span></div>
-<pre><span class="k">from</span> cortex_sdk <span class="k">import</span> CortexClient, Flow, task
+<pre><span class="k">from</span> loom_sdk <span class="k">import</span> LoomClient, Flow, task
 
 <span class="p">@task</span>
 <span class="k">def</span> <span class="f">extract</span>(params, inputs):
@@ -304,7 +304,7 @@ footer .right{margin-left:auto;display:flex;gap:18px}
 <span class="k">def</span> <span class="f">total</span>(params, inputs):
     <span class="k">return</span> <span class="f">sum</span>(inputs[<span class="s">"extract"</span>][<span class="s">"values"</span>])
 
-client = <span class="f">CortexClient</span>(<span class="s">"http://localhost:7420"</span>)
+client = <span class="f">LoomClient</span>(<span class="s">"http://localhost:7420"</span>)
 wf = client.<span class="f">deploy</span>(<span class="f">Flow</span>(<span class="s">"sum"</span>, params={<span class="s">"n"</span>: <span class="n">100</span>},
                         tasks=[extract, total]))
 run = client.<span class="f">trigger</span>(wf[<span class="s">"id"</span>], wait=<span class="n">True</span>)
@@ -312,14 +312,14 @@ run = client.<span class="f">trigger</span>(wf[<span class="s">"id"</span>], wai
     </div>
     <div class="codebox reveal">
       <div class="bar">inside any task<span class="tag">rust engine bindings</span></div>
-<pre><span class="k">import</span> cortex   <span class="c"># injected into every worker</span>
+<pre><span class="k">import</span> loom   <span class="c"># injected into every worker</span>
 
 <span class="k">def</span> <span class="f">handler</span>(params, inputs):
-    rows = cortex.<span class="f">query</span>(<span class="s">"""
+    rows = loom.<span class="f">query</span>(<span class="s">"""
       SELECT zone, AVG(value) AS avg_v
       FROM telemetry GROUP BY zone
     """</span>)  <span class="c"># 1.8M rows, ~250ms, in Rust</span>
-    cortex.<span class="f">ingest</span>(<span class="s">"zone-aggregates"</span>, rows)
+    loom.<span class="f">ingest</span>(<span class="s">"zone-aggregates"</span>, rows)
     <span class="k">return</span> {<span class="s">"zones"</span>: <span class="f">len</span>(rows)}
 
 <span class="c"># agents drive the same surface over MCP:</span>

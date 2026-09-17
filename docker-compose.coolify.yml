@@ -11,30 +11,30 @@
 # resource internal or put Coolify's auth/allowlist in front if exposed.
 
 services:
-  cortex:
+  loom:
     build:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
       # Coolify replaces this with the resource's FQDN and routes it to :7420.
-      # Use SERVICE_FQDN_CORTEX (service name) — Coolify auto-routes the single
+      # Use SERVICE_FQDN_LOOM (service name) — Coolify auto-routes the single
       # exposed port. The _7420 suffix variant (SERVICE_FQDN_<svc>_<port>) is
       # only needed for multi-port services and confuses older Coolify parsers
-      # (they look for service `cortex_7420` → 404 on the generated sslip.io).
-      - SERVICE_FQDN_CORTEX
+      # (they look for service `loom_7420` → 404 on the generated sslip.io).
+      - SERVICE_FQDN_LOOM
       - RUST_LOG=info
-      - CORTEX_PORT=7420
-      - CORTEX_DATA_DIR=/data
-      - CORTEX_CONSOLE_DIST=/app/console/dist
+      - LOOM_PORT=7420
+      - LOOM_DATA_DIR=/data
+      - LOOM_CONSOLE_DIST=/app/console/dist
       # Worker pool / isolation knobs (see README):
-      # - CORTEX_WORKER_MAX_IDLE=8
-      # - CORTEX_WORKER_MAX_JOBS=128
-      # - CORTEX_ISOLATION=process
+      # - LOOM_WORKER_MAX_IDLE=8
+      # - LOOM_WORKER_MAX_JOBS=128
+      # - LOOM_ISOLATION=process
     expose:
       - "7420"
     volumes:
-      - cortex-data:/data
+      - loom-data:/data
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:7420/api/healthz"]
       interval: 30s
@@ -43,4 +43,4 @@ services:
       start_period: 15s
 
 volumes:
-  cortex-data:
+  loom-data:

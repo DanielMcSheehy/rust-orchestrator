@@ -1,4 +1,4 @@
-# @cortex/sdk (TypeScript)
+# @loom/sdk (TypeScript)
 
 TypeScript/JavaScript bindings for [Loom](../../README.md). Zero runtime
 dependencies — built on `fetch` (Node 20+, Bun, Deno, browsers).
@@ -10,7 +10,7 @@ cd sdks/typescript && npm install && npm run build
 ## Define and deploy a flow
 
 ```ts
-import { CortexClient, flow, task } from "@cortex/sdk";
+import { LoomClient, flow, task } from "@loom/sdk";
 
 const extract = task("extract", async (params) => ({
   values: Array.from({ length: params.n as number }, (_, i) => i),
@@ -23,7 +23,7 @@ const total = task(
   { dependsOn: [extract], retries: 2 },
 );
 
-const client = new CortexClient("http://localhost:7420");
+const client = new LoomClient("http://localhost:7420");
 const wf = await client.deploy(flow("sum-pipeline", [extract, total], { params: { n: 100 } }));
 const run = await client.trigger(wf.id, { wait: true });
 console.log(run.state); // "completed"
@@ -59,7 +59,7 @@ await client.createFunction({
   name: "hello",
   code: 'export const handler = (params) => `hi ${params.name}`;',
 });
-const { result } = await client.invoke("hello", { name: "cortex" });
+const { result } = await client.invoke("hello", { name: "loom" });
 
 await client.ingest("sensor-readings", [{ sensor: "a", v: 1 }, { sensor: "b", v: 2 }]);
 ```

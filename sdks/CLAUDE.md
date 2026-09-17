@@ -1,4 +1,4 @@
-# SDKs — Python (`cortex-sdk`) & TypeScript (`@cortex/sdk`)
+# SDKs — Python (`loom-sdk`) & TypeScript (`@loom/sdk`)
 
 ## The two rules
 
@@ -18,7 +18,7 @@
   worker. Imports go inside the function body; no closure captures.
   - Python `@task`: source is extracted with `inspect.getsource`, decorator
     lines stripped, `handler = <fn>` appended. Decorated functions keep
-    working locally and gain `.cortex_task`.
+    working locally and gain `.loom_task`.
   - TS `task(id, handler)`: serialized via `Function.prototype.toString()` —
     document that closures don't survive. Raw source in another runtime goes
     through `task(id, {runtime, code})`.
@@ -37,7 +37,7 @@
 
 ## Layout
 
-- `python/cortex_sdk/`: `client.py` (HTTP + streaming), `flow.py`
+- `python/loom_sdk/`: `client.py` (HTTP + streaming), `flow.py`
   (`Task`, `@task`, `Flow`). Tests ride the examples (`examples/*.py` run
   against a live server).
 - `typescript/src/index.ts`: single-file client + builders; `npm run build`

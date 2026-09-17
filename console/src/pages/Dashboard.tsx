@@ -2,9 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, formatBytes, formatDuration, timeAgo, useEvents } from "../api";
 import { Empty, StatusPill, Tile } from "../components/ui";
-import type { CortexEvent, Run, Stats } from "../types";
+import type { LoomEvent, Run, Stats } from "../types";
 
-function describe(ev: CortexEvent): string {
+function describe(ev: LoomEvent): string {
   switch (ev.type) {
     case "run_updated":
       return `run ${ev.run.workflow_name} → ${ev.run.state}`;
@@ -71,7 +71,7 @@ function ActivityChart({ runs }: { runs: Run[] }) {
 export default function Dashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [runs, setRuns] = useState<Run[]>([]);
-  const [feed, setFeed] = useState<CortexEvent[]>([]);
+  const [feed, setFeed] = useState<LoomEvent[]>([]);
   const navigate = useNavigate();
 
   const refresh = useCallback(() => {

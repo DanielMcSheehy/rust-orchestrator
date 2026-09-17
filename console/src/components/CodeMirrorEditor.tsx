@@ -50,7 +50,7 @@ import type { CodeLanguage } from "./CodeBlock";
 
 // ── theme (matches the console palette) ──────────────────────────────────
 
-const cortexTheme = EditorView.theme(
+const loomTheme = EditorView.theme(
   {
     "&": {
       backgroundColor: "var(--page)",
@@ -119,7 +119,7 @@ const cortexTheme = EditorView.theme(
   { dark: true },
 );
 
-const cortexHighlight = HighlightStyle.define([
+const loomHighlight = HighlightStyle.define([
   { tag: [t.keyword, t.moduleKeyword, t.controlKeyword, t.operatorKeyword], color: "var(--violet)" },
   { tag: [t.string, t.special(t.string), t.regexp], color: "#5eead4" },
   { tag: [t.number, t.bool, t.atom, t.null], color: "var(--warning)" },
@@ -221,8 +221,8 @@ export default function CodeEditor({
           indentWithTab,
         ]),
         languageExtension(language),
-        cortexTheme,
-        syntaxHighlighting(cortexHighlight),
+        loomTheme,
+        syntaxHighlighting(loomHighlight),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             callbacks.current.onChange(update.state.doc.toString());

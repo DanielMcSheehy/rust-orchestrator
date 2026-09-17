@@ -9,7 +9,7 @@ notebooks, and an MCP server — one binary, SQLite inside.
 | Path | What lives there | Scoped guide |
 | --- | --- | --- |
 | `crates/` | Rust workspace: core → store/executor → server | `crates/CLAUDE.md` |
-| `crates/cortex-executor/` | worker processes, wire protocol, pool, isolation | `crates/cortex-executor/CLAUDE.md` |
+| `crates/loom-executor/` | worker processes, wire protocol, pool, isolation | `crates/loom-executor/CLAUDE.md` |
 | `console/` | React + Vite UI | `console/CLAUDE.md` |
 | `sdks/` | zero-dependency Python + TypeScript clients | `sdks/CLAUDE.md` |
 | `site/` | landing page + docs (self-contained HTML, no build) | — |
@@ -21,17 +21,17 @@ notebooks, and an MCP server — one binary, SQLite inside.
 ```bash
 cargo test --workspace                 # all Rust tests (spawns real python3/node workers)
 cargo clippy --workspace --all-targets # CI gates on -D warnings
-cargo run --release -p cortex-server   # API + console on :7420
+cargo run --release -p loom-server   # API + console on :7420
 cd console && npm run build            # tsc -b && vite build (build IS the typecheck)
 cd sdks/typescript && npm run build
 python3 examples/python_pipeline.py    # e2e smoke (needs running server)
 ```
 
-Server env: `CORTEX_PORT` (7420), `CORTEX_DATA_DIR` (./data),
-`CORTEX_CONSOLE_DIST` (./console/dist), `CORTEX_ISOLATION`
-(process|container|microvm), `CORTEX_WORKER_POOL` (=0 disables),
-`CORTEX_WORKER_MAX_IDLE` (8), `CORTEX_WORKER_MAX_JOBS` (128),
-`CORTEX_PYTHON_BIN`/`CORTEX_NODE_BIN`, `CORTEX_API_URL` (injected for workers).
+Server env: `LOOM_PORT` (7420), `LOOM_DATA_DIR` (./data),
+`LOOM_CONSOLE_DIST` (./console/dist), `LOOM_ISOLATION`
+(process|container|microvm), `LOOM_WORKER_POOL` (=0 disables),
+`LOOM_WORKER_MAX_IDLE` (8), `LOOM_WORKER_MAX_JOBS` (128),
+`LOOM_PYTHON_BIN`/`LOOM_NODE_BIN`, `LOOM_API_URL` (injected for workers).
 
 ## Cross-cutting contracts (breaking any of these breaks users)
 
@@ -44,10 +44,10 @@ Server env: `CORTEX_PORT` (7420), `CORTEX_DATA_DIR` (./data),
   This is public API across both SDKs, the shims, docs, and the console.
 - **API error shape**: non-2xx responses are `{"error": "message"}`.
 - **Event stream**: every state change / log line / ingest / invocation emits a
-  `CortexEvent` (serde-tagged `type`, snake_case) on the broadcast bus; SSE
+  `LoomEvent` (serde-tagged `type`, snake_case) on the broadcast bus; SSE
   endpoints are dumb subscribers. New observable behavior ⇒ new event variant.
 - **Worker wire protocol**: JSON-lines over stdio, defined in
-  `crates/cortex-executor/CLAUDE.md`. Changing it touches shims, executor,
+  `crates/loom-executor/CLAUDE.md`. Changing it touches shims, executor,
   and pool simultaneously.
 - **SDK parity**: any new HTTP endpoint gets a method in BOTH
   `sdks/python` and `sdks/typescript`, plus README examples.
